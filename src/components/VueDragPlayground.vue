@@ -59,27 +59,22 @@ const onDrag = (event: MouseEvent) => {
 
   const item = refItems.value[currentDragIndex.value]
   const playgroundBounds = playground!.getBoundingClientRect()
-  const itemBounds = event.target as HTMLElement
+  const itemBounds = (event.target as HTMLElement)!.getBoundingClientRect()
 
   const newX = event.clientX - offsetX.value
   const newY = event.clientY - offsetY.value
-
-  const itemWidth = itemBounds.getBoundingClientRect()?.width
-  const itemHeight = itemBounds.getBoundingClientRect()?.height
   if (
-    event.clientX > playgroundBounds.left &&
-    event.clientX < playgroundBounds.right &&
-    event.clientY > playgroundBounds.top &&
-    event.clientY < playgroundBounds.bottom
+    playground &&
+    playgroundBounds &&
+    itemBounds &&
+    itemBounds.left > playground.clientLeft + playgroundBounds.left &&
+    itemBounds.left + itemBounds.width <
+      playground.clientLeft + playgroundBounds.left + playground.clientWidth &&
+    event.clientY > playground.clientTop + playgroundBounds.top &&
+    event.clientY < playground.clientTop + playgroundBounds.top + playground.clientHeight
   ) {
-    item.x = Math.max(
-      playgroundBounds.x,
-      Math.min(newX, playgroundBounds.x + playgroundBounds.width - itemWidth),
-    )
-    item.y = Math.max(
-      playgroundBounds.y,
-      Math.min(newY, playgroundBounds.y + playgroundBounds.height - itemHeight),
-    )
+    item.x = newX
+    item.y = newY
   }
 }
 
