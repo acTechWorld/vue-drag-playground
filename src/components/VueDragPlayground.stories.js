@@ -14,7 +14,7 @@ const DefaultTemplate = (args) => ({
 
   template: `
     <div class="p-[200px]">      
-      <VueDragPlayground v-bind="args" ref="onboardingTourPoppin" class="w-[500px] h-[500px] border-2 rounded-lg bg-blue-200"/>
+      <VueDragPlayground v-bind="args" ref="onboardingTourPoppin" class="w-full h-screen border-2 rounded-lg bg-blue-200"/>
     </div>
   `,
 })
