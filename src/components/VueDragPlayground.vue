@@ -285,10 +285,10 @@ const startDrag = (event: MouseEvent, index: number) => {
   emit('drag-start', index)
   currentDragIndex.value = index
   currentDragEl.value = event.currentTarget as HTMLElement
+
   const item = refItems.value[index]
   offsetX.value = event.clientX - item.x
   offsetY.value = event.clientY - item.y
-
   // Add global listeners for dragging
   document.addEventListener('mousemove', onDrag)
   document.addEventListener('mouseup', stopDrag)
@@ -297,19 +297,43 @@ const startDrag = (event: MouseEvent, index: number) => {
 const onDrag = (event: MouseEvent) => {
   const playground = document.querySelector('.vue-drag-playground')
   if (!playground || currentDragIndex.value === null || currentDragEl.value === null) return
-  emit('dragging', currentDragIndex.value)
-  const playgroundBounds = playground.getBoundingClientRect()
-  const itemBounds = currentDragEl.value.getBoundingClientRect()
 
+  emit('dragging', currentDragIndex.value)
+
+  const playgroundBounds = playground.getBoundingClientRect()
   const item = refItems.value[currentDragIndex.value]
 
   // Calculate new position
   const newX = event.clientX - offsetX.value
   const newY = event.clientY - offsetY.value
+  const rotation = ((item.rotation ?? 0) * Math.PI) / 180
+  const halfWidth = item.width / 2
+  const halfHeight = item.height / 2
 
-  // Clamp to playground boundaries using itemBounds
-  item.x = Math.max(0, Math.min(newX, playgroundBounds.width - itemBounds.width))
-  item.y = Math.max(0, Math.min(newY, playgroundBounds.height - itemBounds.height))
+  // Calculate rotated corners relative to the center
+  const corners = [
+    { x: -halfWidth, y: -halfHeight }, // Top-left
+    { x: halfWidth, y: -halfHeight }, // Top-right
+    { x: halfWidth, y: halfHeight }, // Bottom-right
+    { x: -halfWidth, y: halfHeight }, // Bottom-left
+  ].map((corner) => ({
+    x: corner.x * Math.cos(rotation) - corner.y * Math.sin(rotation),
+    y: corner.x * Math.sin(rotation) + corner.y * Math.cos(rotation),
+  }))
+
+  // Get maximum offsets caused by rotation
+  const maxX = Math.max(...corners.map((corner) => corner.x))
+  const maxY = Math.max(...corners.map((corner) => corner.y))
+
+  // Update the item's position with clamping
+  item.x = Math.max(
+    0 - halfWidth + maxX,
+    Math.min(newX, playgroundBounds.width - (halfWidth + maxX)),
+  )
+  item.y = Math.max(
+    0 - halfHeight + maxY,
+    Math.min(newY, playgroundBounds.height - (halfHeight + maxY)),
+  )
 }
 
 const stopDrag = () => {
