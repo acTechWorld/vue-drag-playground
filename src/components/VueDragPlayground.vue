@@ -3,7 +3,7 @@
     <div
       v-for="(item, index) in refItems"
       :key="index"
-      class="w-fit h-fit absolute"
+      class="w-fit h-fit absolute group"
       :class="currentDragIndex === index ? 'cursor-grabbing' : 'cursor-grab'"
       :style="{
         left: item.x + 'px',
@@ -13,8 +13,20 @@
     >
       <div :class="`item-${index}`" v-html="item.html"></div>
       <div
-        class="w-3 h-3 absolute bg-white/50 rounded-[50%] cursor-nw-resize -bottom-1 -right-1"
+        class="w-4 h-4 absolute bg-white/50 rounded-[50%] cursor-nesw-resize -top-1 -right-1 hidden group-hover:block"
+        @mousedown.stop="startResize($event, index, 'top-right')"
+      ></div>
+      <div
+        class="w-4 h-4 absolute bg-white/50 rounded-[50%] cursor-nwse-resize -top-1 -left-1 hidden group-hover:block"
+        @mousedown.stop="startResize($event, index, 'top-left')"
+      ></div>
+      <div
+        class="w-4 h-4 absolute bg-white/50 rounded-[50%] cursor-nwse-resize -bottom-1 -right-1 hidden group-hover:block"
         @mousedown.stop="startResize($event, index, 'bottom-right')"
+      ></div>
+      <div
+        class="w-4 h-4 absolute bg-white/50 rounded-[50%] cursor-nesw-resize -bottom-1 -left-1 hidden group-hover:block"
+        @mousedown.stop="startResize($event, index, 'bottom-left')"
       ></div>
     </div>
   </div>
@@ -31,6 +43,8 @@ interface DraggableItem {
   height: number
 }
 
+type ResizingHandle = 'top-right' | 'bottom-right' | 'top-left' | 'bottom-left'
+
 const props = withDefaults(
   defineProps<{
     items?: DraggableItem[]
@@ -46,14 +60,20 @@ const currentDragEl = ref<HTMLElement | null>(null)
 const offsetX = ref(0) // Track X offset
 const offsetY = ref(0) // Track Y offset
 const resizingIndex = ref<number | null>(null)
+const resizingHandle = ref<ResizingHandle | null>(null)
 const initialMouseX = ref(0)
 const initialMouseY = ref(0)
 const initialWidth = ref(0)
 const initialHeight = ref(0)
+const initialX = ref(0)
+const initialY = ref(0)
+
 const emit = defineEmits(['drag-start', 'dragging', 'drag-end'])
 /**
  * METHODS
  */
+
+//RESIZE
 const updateResize = () => {
   refItems.value?.forEach((item, index) => {
     const itemEl = document.querySelector(`.item-${index}`)
@@ -83,31 +103,53 @@ const updateResize = () => {
     }
   })
 }
-const startResize = (event: MouseEvent, index: number, handle: string) => {
-  resizingIndex.value = index
-  initialMouseX.value = event.clientX
-  initialMouseY.value = event.clientY
-  const elementBounds = (event.currentTarget as HTMLElement).getBoundingClientRect()
-  initialWidth.value = elementBounds.width
-  initialHeight.value = elementBounds.height
-
-  document.addEventListener('mousemove', onResize)
-  document.addEventListener('mouseup', stopResize)
+const startResize = (event: MouseEvent, index: number, handle: ResizingHandle) => {
+  const item = refItems.value[index]
+  const itemEl = document.querySelector(`.item-${index}`)
+  if (itemEl && item) {
+    resizingIndex.value = index
+    resizingHandle.value = handle
+    initialMouseX.value = event.clientX
+    initialMouseY.value = event.clientY
+    const elementBounds = (itemEl as HTMLElement).getBoundingClientRect()
+    initialWidth.value = elementBounds.width
+    initialHeight.value = elementBounds.height
+    initialX.value = item.x
+    initialY.value = item.y
+    document.addEventListener('mousemove', onResize)
+    document.addEventListener('mouseup', stopResize)
+  }
 }
 
 const onResize = (event: MouseEvent) => {
-  if (resizingIndex.value === null) return
+  if (resizingIndex.value === null || resizingHandle.value === null) return
 
   const dx = event.clientX - initialMouseX.value
   const dy = event.clientY - initialMouseY.value
   const item = refItems.value[resizingIndex.value]
+  let newWidth = 0
+  let newHeight = 0
 
-  const elementBounds = (event.target as HTMLElement).getBoundingClientRect()
-  initialWidth.value = elementBounds.width
-  initialHeight.value = elementBounds.height
   // Update dimensions based on the handle
-  item.width = Math.max(10, initialWidth.value + dx) // Minimum width = 50px
-  item.height = Math.max(10, initialHeight.value + dy) // Minimum height = 50px
+  if (resizingHandle.value === 'bottom-right') {
+    newWidth = initialWidth.value + dx
+    newHeight = initialHeight.value + dy
+  } else if (resizingHandle.value === 'bottom-left') {
+    newWidth = initialWidth.value - dx
+    newHeight = initialHeight.value + dy
+    item.x = initialX.value + dx
+  } else if (resizingHandle.value === 'top-right') {
+    newWidth = initialWidth.value + dx
+    newHeight = initialHeight.value - dy
+    item.y = initialY.value + dy
+  } else {
+    newWidth = initialWidth.value - dx
+    newHeight = initialHeight.value - dy
+    item.x = initialX.value + dx
+    item.y = initialY.value + dy
+  }
+  item.width = Math.max(10, newWidth)
+  item.height = Math.max(10, newHeight)
 }
 
 const stopResize = () => {
@@ -117,6 +159,7 @@ const stopResize = () => {
   document.removeEventListener('mouseup', stopResize)
 }
 
+//DRAG
 const startDrag = (event: MouseEvent, index: number) => {
   emit('drag-start', index)
   currentDragIndex.value = index
