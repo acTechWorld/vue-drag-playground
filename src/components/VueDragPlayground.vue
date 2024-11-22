@@ -129,6 +129,8 @@ const startResize = (event: MouseEvent, index: number, handle: ResizingHandle) =
   }
 }
 
+const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(value, max))
+
 const onResize = (event: MouseEvent) => {
   const playground = document.querySelector('.vue-drag-playground')
   if (!playground || resizingIndex.value === null || resizingHandle.value === null) return
@@ -137,56 +139,65 @@ const onResize = (event: MouseEvent) => {
   const dy = event.clientY - initialMouseY.value
   const item = refItems.value[resizingIndex.value]
   const playgroundBounds = playground.getBoundingClientRect()
-  let newWidth = 0
-  let newHeight = 0
 
-  // Update dimensions based on the handle
-  if (resizingHandle.value === 'bottom-right') {
-    newWidth = initialWidth.value + dx
-    newHeight = initialHeight.value + dy
-    newWidth = Math.max(10, Math.min(newWidth, playgroundBounds.width - item.x))
-    newHeight = Math.max(10, Math.min(newHeight, playgroundBounds.height - item.y))
-  } else if (resizingHandle.value === 'bottom-left') {
-    newHeight = initialHeight.value + dy
-    if (initialX.value + dx > 0) {
-      item.x = initialX.value + dx
-      newWidth = initialWidth.value - dx
-    } else {
-      newWidth = item.width + item.x
-      item.x = 0
-    }
-    newWidth = Math.max(10, newWidth)
-    newHeight = Math.max(10, Math.min(newHeight, playgroundBounds.height - item.y))
-  } else if (resizingHandle.value === 'top-right') {
-    newWidth = initialWidth.value + dx
-    if (initialY.value + dy > 0) {
-      newHeight = initialHeight.value - dy
-      item.y = initialY.value + dy
-    } else {
-      newHeight = item.height + item.y
-      item.y = 0
-    }
-    newWidth = Math.max(10, Math.min(newWidth, playgroundBounds.width - item.x))
-    newHeight = Math.max(10, newHeight)
-  } else {
-    if (initialX.value + dx > 0) {
-      item.x = initialX.value + dx
-      newWidth = initialWidth.value - dx
-    } else {
-      newWidth = item.width + item.x
-      item.x = 0
-    }
-    if (initialY.value + dy > 0) {
-      newHeight = initialHeight.value - dy
-      item.y = initialY.value + dy
-    } else {
-      newHeight = item.height + item.y
-      item.y = 0
-    }
+  let newWidth = item.width
+  let newHeight = item.height
+  let newX = item.x
+  let newY = item.y
+
+  // Handle-specific updates
+  switch (resizingHandle.value) {
+    case 'bottom-right':
+      newWidth = clamp(initialWidth.value + dx, 10, playgroundBounds.width - item.x)
+      newHeight = clamp(initialHeight.value + dy, 10, playgroundBounds.height - item.y)
+      break
+
+    case 'bottom-left':
+      newHeight = clamp(initialHeight.value + dy, 10, playgroundBounds.height - item.y)
+      if (initialX.value + dx > 0) {
+        newX = initialX.value + dx
+        newWidth = clamp(initialWidth.value - dx, 10, playgroundBounds.width - newX)
+      } else {
+        newWidth = item.width + item.x
+        newX = 0
+      }
+      break
+
+    case 'top-right':
+      newWidth = clamp(initialWidth.value + dx, 10, playgroundBounds.width - item.x)
+      if (initialY.value + dy > 0) {
+        newY = initialY.value + dy
+        newHeight = clamp(initialHeight.value - dy, 10, playgroundBounds.height - newY)
+      } else {
+        newHeight = item.height + item.y
+        newY = 0
+      }
+      break
+
+    case 'top-left':
+      if (initialX.value + dx > 0) {
+        newX = initialX.value + dx
+        newWidth = clamp(initialWidth.value - dx, 10, playgroundBounds.width - newX)
+      } else {
+        newWidth = item.width + item.x
+        newX = 0
+      }
+      if (initialY.value + dy > 0) {
+        newY = initialY.value + dy
+        newHeight = clamp(initialHeight.value - dy, 10, playgroundBounds.height - newY)
+      } else {
+        newHeight = item.height + item.y
+        newY = 0
+      }
+      break
   }
 
+  // Update item properties
   item.width = newWidth
   item.height = newHeight
+  item.x = newX
+  item.y = newY
+
   emit('resizing', resizingIndex.value)
 }
 
