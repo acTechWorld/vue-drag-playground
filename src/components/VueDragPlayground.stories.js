@@ -26,4 +26,5 @@ Default.args = {
     { html: "<h1 style='background: blue; width: 100px'>Heading</h1>", x: 50, y: 50 },
     { html: "<div style='background: yellow; padding: 10px;'>Box</div>", x: 350, y: 300 },
   ],
+  resizable: true,
 }

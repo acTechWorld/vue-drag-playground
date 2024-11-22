@@ -8,6 +8,7 @@
       :style="{
         left: item.x + 'px',
         top: item.y + 'px',
+        transform: `rotate(${item.rotation}deg)`,
       }"
       @mousedown="startDrag($event, index)"
     >
@@ -28,12 +29,16 @@
         class="w-4 h-4 absolute bg-white/50 rounded-[50%] cursor-nesw-resize -bottom-1 -left-1 hidden group-hover:block"
         @mousedown.stop="startResize($event, index, 'bottom-left')"
       ></div>
+      <div
+        class="w-4 h-4 absolute bg-blue-500 rounded-[50%] cursor-pointer -top-6 left-1/2 transform -translate-x-1/2"
+        @mousedown.stop="startRotate($event, index)"
+      ></div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onUnmounted, watch } from 'vue'
+import { ref, onUnmounted } from 'vue'
 
 interface DraggableItem {
   html: string // HTML string to render
@@ -41,6 +46,7 @@ interface DraggableItem {
   y: number // Y-coordinate for position
   width: number
   height: number
+  rotation: number
 }
 
 type ResizingHandle = 'top-right' | 'bottom-right' | 'top-left' | 'bottom-left'
@@ -48,9 +54,11 @@ type ResizingHandle = 'top-right' | 'bottom-right' | 'top-left' | 'bottom-left'
 const props = withDefaults(
   defineProps<{
     items?: DraggableItem[]
+    resizable?: boolean
   }>(),
   {
     items: () => [],
+    resizable: false,
   },
 )
 
@@ -68,6 +76,12 @@ const initialHeight = ref(0)
 const initialX = ref(0)
 const initialY = ref(0)
 
+//ROTATION
+const initialAngle = ref(0)
+const centerX = ref(0)
+const rotatingIndex = ref<number | null>(null)
+const centerY = ref(0)
+
 const emit = defineEmits([
   'drag-start',
   'dragging',
@@ -75,61 +89,69 @@ const emit = defineEmits([
   'resize-start',
   'resizing',
   'resize-end',
-]) /**
+  'rotation-end',
+  'rotation-start',
+  'rotating',
+])
+
+/**
  * METHODS
  */
 
 //RESIZE
-const updateResize = () => {
-  refItems.value?.forEach((item, index) => {
-    const itemEl = document.querySelector(`.item-${index}`)
-    if (itemEl) {
-      const child = itemEl.children?.[0]
-      if (child) {
-        const currentStyles = child.getAttribute('style') || ''
-        // Parse current styles into a map
-        const stylesMap = new Map(
-          currentStyles
-            .split(';')
-            .map((style) => {
-              const [key, value] = style.split(':').map((s) => s.trim())
-              return key && value ? [key, value] : null
-            })
-            .filter(Boolean) as [string, string][],
-        )
+const updateResize = (index: number) => {
+  const itemEl = document.querySelector(`.item-${index}`)
+  const item = refItems.value[index]
+  if (itemEl && item) {
+    const child = itemEl.children?.[0]
+    if (child) {
+      const currentStyles = child.getAttribute('style') || ''
+      // Parse current styles into a map
+      const stylesMap = new Map(
+        currentStyles
+          .split(';')
+          .map((style) => {
+            const [key, value] = style.split(':').map((s) => s.trim())
+            return key && value ? [key, value] : null
+          })
+          .filter(Boolean) as [string, string][],
+      )
 
-        // Add computed styles for fallback (if needed)
-        if (item.width) stylesMap.set('width', `${item.width}px`)
-        if (item.height) stylesMap.set('height', `${item.height}px`)
-        // Reconstruct the style string
-        const updatedStyleString = Array.from(stylesMap)
-          .map(([key, value]) => `${key}: ${value}`)
-          .join('; ')
-        child.setAttribute('style', updatedStyleString)
-      }
+      // Add computed styles for fallback (if needed)
+      if (item.width) stylesMap.set('width', `${item.width}px`)
+      if (item.height) stylesMap.set('height', `${item.height}px`)
+      // Reconstruct the style string
+      const updatedStyleString = Array.from(stylesMap)
+        .map(([key, value]) => `${key}: ${value}`)
+        .join('; ')
+      child.setAttribute('style', updatedStyleString)
     }
-  })
+  }
 }
 const startResize = (event: MouseEvent, index: number, handle: ResizingHandle) => {
-  emit('resize-start', index, handle)
-  const item = refItems.value[index]
-  const itemEl = document.querySelector(`.item-${index}`)
-  if (itemEl && item) {
-    resizingIndex.value = index
-    resizingHandle.value = handle
-    initialMouseX.value = event.clientX
-    initialMouseY.value = event.clientY
-    const elementBounds = (itemEl as HTMLElement).getBoundingClientRect()
-    initialWidth.value = elementBounds.width
-    initialHeight.value = elementBounds.height
-    initialX.value = item.x
-    initialY.value = item.y
-    document.addEventListener('mousemove', onResize)
-    document.addEventListener('mouseup', stopResize)
+  if (props.resizable) {
+    emit('resize-start', index, handle)
+    const item = refItems.value[index]
+    const itemEl = document.querySelector(`.item-${index}`)
+    if (itemEl && item) {
+      resizingIndex.value = index
+      resizingHandle.value = handle
+      initialMouseX.value = event.clientX
+      initialMouseY.value = event.clientY
+      const elementBounds = (itemEl as HTMLElement).getBoundingClientRect()
+      initialWidth.value = elementBounds.width
+      initialHeight.value = elementBounds.height
+      initialX.value = item.x
+      initialY.value = item.y
+      document.addEventListener('mousemove', onResize)
+      document.addEventListener('mouseup', stopResize)
+    }
   }
 }
 
-const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(value, max))
+const clamp = (value: number, min: number, max: number) => {
+  return Math.max(min, Math.min(value, max))
+}
 
 const onResize = (event: MouseEvent) => {
   const playground = document.querySelector('.vue-drag-playground')
@@ -199,6 +221,7 @@ const onResize = (event: MouseEvent) => {
   item.y = newY
 
   emit('resizing', resizingIndex.value)
+  updateResize(resizingIndex.value)
 }
 
 const stopResize = () => {
@@ -206,6 +229,55 @@ const stopResize = () => {
   resizingIndex.value = null
   document.removeEventListener('mousemove', onResize)
   document.removeEventListener('mouseup', stopResize)
+}
+
+//ROTATE
+const startRotate = (event: MouseEvent, index: number) => {
+  const item = refItems.value[index]
+  const itemEl = document.querySelector(`.item-${index}`)
+  if (itemEl && item) {
+    rotatingIndex.value = index
+
+    // Calculate the center of the element
+    const bounds = (itemEl as HTMLElement).getBoundingClientRect()
+    centerX.value = bounds.left + bounds.width / 2
+    centerY.value = bounds.top + bounds.height / 2
+
+    // Store the initial angle
+    initialMouseX.value = event.clientX
+    initialMouseY.value = event.clientY
+    const dx = initialMouseX.value - centerX.value
+    const dy = initialMouseY.value - centerY.value
+    console.log()
+    initialAngle.value = Math.atan2(dy, dx) * (180 / Math.PI) - (item.rotation ?? 0)
+
+    // Add global listeners for rotation
+    document.addEventListener('mousemove', onRotate)
+    document.addEventListener('mouseup', stopRotate)
+    emit('rotation-start', index)
+  }
+}
+
+const onRotate = (event: MouseEvent) => {
+  if (rotatingIndex.value === null) return
+  const item = refItems.value[rotatingIndex.value]
+
+  // Calculate the new angle
+  const dx = event.clientX - centerX.value
+  const dy = event.clientY - centerY.value
+  const angle = Math.atan2(dy, dx) * (180 / Math.PI)
+  // Update the item's rotation
+  item.rotation = angle - initialAngle.value
+  emit('rotating', rotatingIndex.value)
+}
+
+const stopRotate = () => {
+  if (rotatingIndex.value !== null) emit('rotation-end', rotatingIndex.value)
+  rotatingIndex.value = null
+
+  // Remove global listeners
+  document.removeEventListener('mousemove', onRotate)
+  document.removeEventListener('mouseup', stopRotate)
 }
 
 //DRAG
@@ -253,8 +325,6 @@ onUnmounted(() => {
   document.removeEventListener('mousemove', onDrag)
   document.removeEventListener('mouseup', stopDrag)
 })
-
-watch(refItems, () => updateResize(), { deep: true })
 </script>
 
 <style scoped></style>
