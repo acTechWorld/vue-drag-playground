@@ -68,8 +68,14 @@ const initialHeight = ref(0)
 const initialX = ref(0)
 const initialY = ref(0)
 
-const emit = defineEmits(['drag-start', 'dragging', 'drag-end'])
-/**
+const emit = defineEmits([
+  'drag-start',
+  'dragging',
+  'drag-end',
+  'resize-start',
+  'resizing',
+  'resize-end',
+]) /**
  * METHODS
  */
 
@@ -79,31 +85,33 @@ const updateResize = () => {
     const itemEl = document.querySelector(`.item-${index}`)
     if (itemEl) {
       const child = itemEl.children?.[0]
-      const currentStyles = child.getAttribute('style') || ''
-      // Parse current styles into a map
-      const stylesMap = new Map(
-        currentStyles
-          .split(';')
-          .map((style) => {
-            const [key, value] = style.split(':').map((s) => s.trim())
-            return key && value ? [key, value] : null
-          })
-          .filter(Boolean) as [string, string][],
-      )
+      if (child) {
+        const currentStyles = child.getAttribute('style') || ''
+        // Parse current styles into a map
+        const stylesMap = new Map(
+          currentStyles
+            .split(';')
+            .map((style) => {
+              const [key, value] = style.split(':').map((s) => s.trim())
+              return key && value ? [key, value] : null
+            })
+            .filter(Boolean) as [string, string][],
+        )
 
-      // Add computed styles for fallback (if needed)
-      if (item.width) stylesMap.set('width', `${item.width}px`)
-      if (item.height) stylesMap.set('height', `${item.height}px`)
-      // Reconstruct the style string
-      const updatedStyleString = Array.from(stylesMap)
-        .map(([key, value]) => `${key}: ${value}`)
-        .join('; ')
-      child.setAttribute('style', updatedStyleString)
-      console.log(itemEl)
+        // Add computed styles for fallback (if needed)
+        if (item.width) stylesMap.set('width', `${item.width}px`)
+        if (item.height) stylesMap.set('height', `${item.height}px`)
+        // Reconstruct the style string
+        const updatedStyleString = Array.from(stylesMap)
+          .map(([key, value]) => `${key}: ${value}`)
+          .join('; ')
+        child.setAttribute('style', updatedStyleString)
+      }
     }
   })
 }
 const startResize = (event: MouseEvent, index: number, handle: ResizingHandle) => {
+  emit('resize-start', index, handle)
   const item = refItems.value[index]
   const itemEl = document.querySelector(`.item-${index}`)
   if (itemEl && item) {
@@ -122,11 +130,13 @@ const startResize = (event: MouseEvent, index: number, handle: ResizingHandle) =
 }
 
 const onResize = (event: MouseEvent) => {
-  if (resizingIndex.value === null || resizingHandle.value === null) return
+  const playground = document.querySelector('.vue-drag-playground')
+  if (!playground || resizingIndex.value === null || resizingHandle.value === null) return
 
   const dx = event.clientX - initialMouseX.value
   const dy = event.clientY - initialMouseY.value
   const item = refItems.value[resizingIndex.value]
+  const playgroundBounds = playground.getBoundingClientRect()
   let newWidth = 0
   let newHeight = 0
 
@@ -134,27 +144,55 @@ const onResize = (event: MouseEvent) => {
   if (resizingHandle.value === 'bottom-right') {
     newWidth = initialWidth.value + dx
     newHeight = initialHeight.value + dy
+    newWidth = Math.max(10, Math.min(newWidth, playgroundBounds.width - item.x))
+    newHeight = Math.max(10, Math.min(newHeight, playgroundBounds.height - item.y))
   } else if (resizingHandle.value === 'bottom-left') {
-    newWidth = initialWidth.value - dx
     newHeight = initialHeight.value + dy
-    item.x = initialX.value + dx
+    if (initialX.value + dx > 0) {
+      item.x = initialX.value + dx
+      newWidth = initialWidth.value - dx
+    } else {
+      newWidth = item.width + item.x
+      item.x = 0
+    }
+    newWidth = Math.max(10, newWidth)
+    newHeight = Math.max(10, Math.min(newHeight, playgroundBounds.height - item.y))
   } else if (resizingHandle.value === 'top-right') {
     newWidth = initialWidth.value + dx
-    newHeight = initialHeight.value - dy
-    item.y = initialY.value + dy
+    if (initialY.value + dy > 0) {
+      newHeight = initialHeight.value - dy
+      item.y = initialY.value + dy
+    } else {
+      newHeight = item.height + item.y
+      item.y = 0
+    }
+    newWidth = Math.max(10, Math.min(newWidth, playgroundBounds.width - item.x))
+    newHeight = Math.max(10, newHeight)
   } else {
-    newWidth = initialWidth.value - dx
-    newHeight = initialHeight.value - dy
-    item.x = initialX.value + dx
-    item.y = initialY.value + dy
+    if (initialX.value + dx > 0) {
+      item.x = initialX.value + dx
+      newWidth = initialWidth.value - dx
+    } else {
+      newWidth = item.width + item.x
+      item.x = 0
+    }
+    if (initialY.value + dy > 0) {
+      newHeight = initialHeight.value - dy
+      item.y = initialY.value + dy
+    } else {
+      newHeight = item.height + item.y
+      item.y = 0
+    }
   }
-  item.width = Math.max(10, newWidth)
-  item.height = Math.max(10, newHeight)
+
+  item.width = newWidth
+  item.height = newHeight
+  emit('resizing', resizingIndex.value)
 }
 
 const stopResize = () => {
+  emit('resize-end', resizingIndex.value)
   resizingIndex.value = null
-
   document.removeEventListener('mousemove', onResize)
   document.removeEventListener('mouseup', stopResize)
 }
