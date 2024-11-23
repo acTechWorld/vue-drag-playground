@@ -138,11 +138,8 @@ const startResize = (event: MouseEvent, index: number, handle: ResizingHandle) =
       resizingHandle.value = handle
       initialMouseX.value = event.clientX
       initialMouseY.value = event.clientY
-      const elementBounds = (itemEl as HTMLElement).getBoundingClientRect()
-      initialWidth.value = elementBounds.width
-      initialHeight.value = elementBounds.height
-      initialX.value = item.x
-      initialY.value = item.y
+      initialWidth.value = item.width
+      initialHeight.value = item.height
       document.addEventListener('mousemove', onResize)
       document.addEventListener('mouseup', stopResize)
     }
@@ -157,68 +154,96 @@ const onResize = (event: MouseEvent) => {
   const playground = document.querySelector('.vue-drag-playground')
   if (!playground || resizingIndex.value === null || resizingHandle.value === null) return
 
-  const dx = event.clientX - initialMouseX.value
-  const dy = event.clientY - initialMouseY.value
   const item = refItems.value[resizingIndex.value]
   const playgroundBounds = playground.getBoundingClientRect()
 
+  // Calculate rotation
+  const rotation = ((item.rotation ?? 0) * Math.PI) / 180
+  const cos = Math.cos(rotation)
+  const sin = Math.sin(rotation)
+
+  const halfWidth = item.width / 2
+  const halfHeight = item.height / 2
+  const centerX = item.x + item.width / 2
+  const centerY = item.y + item.height / 2
+
+  // Calculate corners relative to the center
+  const corners = [
+    { x: -halfWidth, y: -halfHeight }, // Top-left
+    { x: halfWidth, y: -halfHeight }, // Top-right
+    { x: halfWidth, y: halfHeight }, // Bottom-right
+    { x: -halfWidth, y: halfHeight }, // Bottom-left
+  ].map((corner) => ({
+    x: centerX + corner.x * cos - corner.y * sin,
+    y: centerY + corner.x * sin + corner.y * cos,
+  }))
+
+  // Calculate deltas in rotated space
+  const dx = event.clientX - initialMouseX.value
+  const dy = event.clientY - initialMouseY.value
+  const rotatedDx = dx * cos + dy * sin
+  const rotatedDy = dy * cos - dx * sin
   let newWidth = item.width
   let newHeight = item.height
   let newX = item.x
   let newY = item.y
 
-  // Handle-specific updates
+  // Determine the fixed corner and calculate new center
+  let fixedCorner // This will hold the position of the fixed corner
+  let newCenterX, newCenterY
+
   switch (resizingHandle.value) {
-    case 'bottom-right':
-      newWidth = clamp(initialWidth.value + dx, 10, playgroundBounds.width - item.x)
-      newHeight = clamp(initialHeight.value + dy, 10, playgroundBounds.height - item.y)
-      break
+    case 'bottom-right': {
+      fixedCorner = corners[0] // Top-left
+      newWidth = clamp(initialWidth.value + rotatedDx, 10, playgroundBounds.width)
+      newHeight = clamp(initialHeight.value + rotatedDy, 10, playgroundBounds.height)
 
-    case 'bottom-left':
-      newHeight = clamp(initialHeight.value + dy, 10, playgroundBounds.height - item.y)
-      if (initialX.value + dx > 0) {
-        newX = initialX.value + dx
-        newWidth = clamp(initialWidth.value - dx, 10, playgroundBounds.width - newX)
-      } else {
-        newWidth = item.width + item.x
-        newX = 0
-      }
+      // Calculate the new center based on the fixed corner
+      newCenterX = fixedCorner.x + (newWidth * cos) / 2 - (newHeight * sin) / 2
+      newCenterY = fixedCorner.y + (newWidth * sin) / 2 + (newHeight * cos) / 2
       break
+    }
+    case 'bottom-left': {
+      fixedCorner = corners[1] // Top-right
+      newWidth = clamp(initialWidth.value - rotatedDx, 10, playgroundBounds.width)
+      newHeight = clamp(initialHeight.value + rotatedDy, 10, playgroundBounds.height)
 
-    case 'top-right':
-      newWidth = clamp(initialWidth.value + dx, 10, playgroundBounds.width - item.x)
-      if (initialY.value + dy > 0) {
-        newY = initialY.value + dy
-        newHeight = clamp(initialHeight.value - dy, 10, playgroundBounds.height - newY)
-      } else {
-        newHeight = item.height + item.y
-        newY = 0
-      }
+      // Calculate the new center based on the fixed corner
+      newCenterX = fixedCorner.x - (newWidth * cos) / 2 - (newHeight * sin) / 2
+      newCenterY = fixedCorner.y - (newWidth * sin) / 2 + (newHeight * cos) / 2
       break
+    }
+    case 'top-right': {
+      fixedCorner = corners[3] // Bottom-left
+      newWidth = clamp(initialWidth.value + rotatedDx, 10, playgroundBounds.width)
+      newHeight = clamp(initialHeight.value - rotatedDy, 10, playgroundBounds.height)
 
-    case 'top-left':
-      if (initialX.value + dx > 0) {
-        newX = initialX.value + dx
-        newWidth = clamp(initialWidth.value - dx, 10, playgroundBounds.width - newX)
-      } else {
-        newWidth = item.width + item.x
-        newX = 0
-      }
-      if (initialY.value + dy > 0) {
-        newY = initialY.value + dy
-        newHeight = clamp(initialHeight.value - dy, 10, playgroundBounds.height - newY)
-      } else {
-        newHeight = item.height + item.y
-        newY = 0
-      }
+      // Calculate the new center based on the fixed corner
+      newCenterX = fixedCorner.x + (newWidth * cos) / 2 + (newHeight * sin) / 2
+      newCenterY = fixedCorner.y + (newWidth * sin) / 2 - (newHeight * cos) / 2
       break
+    }
+    case 'top-left': {
+      fixedCorner = corners[2] // Bottom-right
+      newWidth = clamp(initialWidth.value - rotatedDx, 10, playgroundBounds.width)
+      newHeight = clamp(initialHeight.value - rotatedDy, 10, playgroundBounds.height)
+
+      // Calculate the new center based on the fixed corner
+      newCenterX = fixedCorner.x - (newWidth * cos) / 2 + (newHeight * sin) / 2
+      newCenterY = fixedCorner.y - (newWidth * sin) / 2 - (newHeight * cos) / 2
+      break
+    }
   }
 
-  // Update item properties
+  // Calculate the new top-left position based on the new center
+  newX = newCenterX - newWidth / 2
+  newY = newCenterY - newHeight / 2
+
+  // Apply the calculated size and position
   item.width = newWidth
   item.height = newHeight
-  item.x = newX
-  item.y = newY
+  item.x = clamp(newX, 0, playgroundBounds.width - newWidth)
+  item.y = clamp(newY, 0, playgroundBounds.height - newHeight)
 
   emit('resizing', resizingIndex.value)
   updateResize(resizingIndex.value)
