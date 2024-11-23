@@ -13,7 +13,7 @@ const DefaultTemplate = (args) => ({
   },
 
   template: `
-    <div class="p-[200px]">      
+    <div>      
       <VueDragPlayground v-bind="args" ref="onboardingTourPoppin" class="w-full h-screen border-2 rounded-lg bg-blue-200"/>
     </div>
   `,

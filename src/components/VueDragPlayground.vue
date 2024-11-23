@@ -10,28 +10,34 @@
         top: item.y + 'px',
         transform: `rotate(${item.rotation}deg) translate3d(0, 0, 0)`,
       }"
-      @mousedown="startDrag($event, index)"
+      @mousedown.stop="startDrag($event, index)"
+      @touchstart.stop="startDrag($event, index)"
     >
       <div :class="`item-${index}`" v-html="item.html"></div>
       <div
         class="w-4 h-4 absolute bg-white/50 rounded-[50%] cursor-nesw-resize -top-1 -right-1 hidden group-hover:block"
         @mousedown.stop="startResize($event, index, 'top-right')"
+        @touchstart.stop="startResize($event, index, 'top-right')"
       ></div>
       <div
         class="w-4 h-4 absolute bg-white/50 rounded-[50%] cursor-nwse-resize -top-1 -left-1 hidden group-hover:block"
         @mousedown.stop="startResize($event, index, 'top-left')"
+        @touchstart.stop="startResize($event, index, 'top-left')"
       ></div>
       <div
         class="w-4 h-4 absolute bg-white/50 rounded-[50%] cursor-nwse-resize -bottom-1 -right-1 hidden group-hover:block"
         @mousedown.stop="startResize($event, index, 'bottom-right')"
+        @touchstart.stop="startResize($event, index, 'bottom-right')"
       ></div>
       <div
         class="w-4 h-4 absolute bg-white/50 rounded-[50%] cursor-nesw-resize -bottom-1 -left-1 hidden group-hover:block"
         @mousedown.stop="startResize($event, index, 'bottom-left')"
+        @touchstart.stop="startResize($event, index, 'bottom-left')"
       ></div>
       <div
         class="w-4 h-4 absolute bg-blue-500 rounded-[50%] cursor-pointer -top-6 left-1/2 transform -translate-x-1/2"
         @mousedown.stop="startRotate($event, index)"
+        @touchstart.stop="startRotate($event, index)"
       ></div>
     </div>
   </div>
@@ -99,12 +105,12 @@ const emit = defineEmits([
  */
 
 //UTILS
-const throttle = (func: (args: any) => void, delay: number) => {
+const throttle = (func: (event: MouseEvent | TouchEvent) => void, delay: number) => {
   let lastCall = 0
-  return function (...args: any[]) {
+  return function (event: MouseEvent | TouchEvent) {
     const now = Date.now()
     if (now - lastCall >= delay) {
-      func(...args)
+      func(event)
       lastCall = now
     }
   }
@@ -140,7 +146,7 @@ const updateResize = (index: number) => {
     }
   }
 }
-const startResize = (event: MouseEvent, index: number, handle: ResizingHandle) => {
+const startResize = (event: MouseEvent | TouchEvent, index: number, handle: ResizingHandle) => {
   if (props.resizable) {
     emit('resize-start', index, handle)
     const item = refItems.value[index]
@@ -148,12 +154,13 @@ const startResize = (event: MouseEvent, index: number, handle: ResizingHandle) =
     if (itemEl && item) {
       resizingIndex.value = index
       resizingHandle.value = handle
-      initialMouseX.value = event.clientX
-      initialMouseY.value = event.clientY
+      const isTouch = event instanceof TouchEvent
+      initialMouseX.value = isTouch ? event.touches[0].clientX : event.clientX
+      initialMouseY.value = isTouch ? event.touches[0].clientY : event.clientY
       initialWidth.value = item.width
       initialHeight.value = item.height
-      document.addEventListener('mousemove', onResize)
-      document.addEventListener('mouseup', stopResize)
+      document.addEventListener(isTouch ? 'touchmove' : 'mousemove', onResize)
+      document.addEventListener(isTouch ? 'touchend' : 'mouseup', stopResize)
     }
   }
 }
@@ -162,7 +169,8 @@ const clamp = (value: number, min: number, max: number) => {
   return Math.max(min, Math.min(value, max))
 }
 
-const onResize = throttle((event: MouseEvent) => {
+const onResize = throttle((event: MouseEvent | TouchEvent) => {
+  event.stopPropagation()
   const playground = document.querySelector('.vue-drag-playground')
   if (!playground || resizingIndex.value === null || resizingHandle.value === null) return
 
@@ -190,9 +198,13 @@ const onResize = throttle((event: MouseEvent) => {
     y: centerY + corner.x * sin + corner.y * cos,
   }))
 
+  const isTouch = event instanceof TouchEvent
+  const clientX = isTouch ? event.touches[0].clientX : event.clientX
+  const clientY = isTouch ? event.touches[0].clientY : event.clientY
+
   // Calculate deltas in rotated space
-  const dx = event.clientX - initialMouseX.value
-  const dy = event.clientY - initialMouseY.value
+  const dx = clientX - initialMouseX.value
+  const dy = clientY - initialMouseY.value
   const rotatedDx = dx * cos + dy * sin
   const rotatedDy = dy * cos - dx * sin
   let newWidth = item.width
@@ -301,10 +313,12 @@ const stopResize = () => {
   resizingIndex.value = null
   document.removeEventListener('mousemove', onResize)
   document.removeEventListener('mouseup', stopResize)
+  document.removeEventListener('touchmove', onResize)
+  document.removeEventListener('touchend', stopResize)
 }
 
 //ROTATE
-const startRotate = (event: MouseEvent, index: number) => {
+const startRotate = (event: MouseEvent | TouchEvent, index: number) => {
   const item = refItems.value[index]
   const itemEl = document.querySelector(`.item-${index}`)
   if (itemEl && item) {
@@ -315,29 +329,34 @@ const startRotate = (event: MouseEvent, index: number) => {
     centerX.value = bounds.left + bounds.width / 2
     centerY.value = bounds.top + bounds.height / 2
 
-    // Store the initial angle
-    initialMouseX.value = event.clientX
-    initialMouseY.value = event.clientY
+    const isTouch = event instanceof TouchEvent
+    initialMouseX.value = isTouch ? event.touches[0].clientX : event.clientX
+    initialMouseY.value = isTouch ? event.touches[0].clientY : event.clientY
     const dx = initialMouseX.value - centerX.value
     const dy = initialMouseY.value - centerY.value
+
     initialAngle.value = Math.atan2(dy, dx) * (180 / Math.PI) - (item.rotation ?? 0)
 
     // Add global listeners for rotation
-    document.addEventListener('mousemove', onRotate)
-    document.addEventListener('mouseup', stopRotate)
+    document.addEventListener(isTouch ? 'touchmove' : 'mousemove', onRotate)
+    document.addEventListener(isTouch ? 'touchend' : 'mouseup', stopRotate)
     emit('rotation-start', index)
   }
 }
 
-const onRotate = throttle((event: MouseEvent) => {
+const onRotate = throttle((event: MouseEvent | TouchEvent) => {
+  event.stopPropagation()
   const playground = document.querySelector('.vue-drag-playground')
   if (!playground || rotatingIndex.value === null) return
   const item = refItems.value[rotatingIndex.value]
   const playgroundBounds = playground.getBoundingClientRect()
 
-  // Calculate the new angle
-  const dx = event.clientX - centerX.value
-  const dy = event.clientY - centerY.value
+  const isTouch = event instanceof TouchEvent
+  const clientX = isTouch ? event.touches[0].clientX : event.clientX
+  const clientY = isTouch ? event.touches[0].clientY : event.clientY
+
+  const dx = clientX - centerX.value
+  const dy = clientY - centerY.value
   const angle = Math.atan2(dy, dx) * (180 / Math.PI)
 
   const rotation = angle - initialAngle.value
@@ -378,23 +397,27 @@ const stopRotate = () => {
   // Remove global listeners
   document.removeEventListener('mousemove', onRotate)
   document.removeEventListener('mouseup', stopRotate)
+  document.removeEventListener('touchmove', onRotate)
+  document.removeEventListener('touchend', stopRotate)
 }
 
 //DRAG
-const startDrag = (event: MouseEvent, index: number) => {
+const startDrag = (event: MouseEvent | TouchEvent, index: number) => {
   emit('drag-start', index)
   currentDragIndex.value = index
   currentDragEl.value = event.currentTarget as HTMLElement
 
   const item = refItems.value[index]
-  offsetX.value = event.clientX - item.x
-  offsetY.value = event.clientY - item.y
+  const isTouch = event instanceof TouchEvent
+  offsetX.value = isTouch ? event.touches[0].clientX - item.x : event.clientX - item.x
+  offsetY.value = isTouch ? event.touches[0].clientY - item.y : event.clientY - item.y
   // Add global listeners for dragging
-  document.addEventListener('mousemove', onDrag)
-  document.addEventListener('mouseup', stopDrag)
+  document.addEventListener(isTouch ? 'touchmove' : 'mousemove', onDrag)
+  document.addEventListener(isTouch ? 'touchend' : 'mouseup', stopDrag)
 }
 
-const onDrag = throttle((event: MouseEvent) => {
+const onDrag = throttle((event: MouseEvent | TouchEvent) => {
+  event.stopPropagation()
   const playground = document.querySelector('.vue-drag-playground')
   if (!playground || currentDragIndex.value === null || currentDragEl.value === null) return
 
@@ -402,10 +425,13 @@ const onDrag = throttle((event: MouseEvent) => {
 
   const playgroundBounds = playground.getBoundingClientRect()
   const item = refItems.value[currentDragIndex.value]
+  const isTouch = event instanceof TouchEvent
+  const clientX = isTouch ? event.touches[0].clientX : event.clientX
+  const clientY = isTouch ? event.touches[0].clientY : event.clientY
 
-  // Calculate new position
-  const newX = event.clientX - offsetX.value
-  const newY = event.clientY - offsetY.value
+  const newX = clientX - offsetX.value
+  const newY = clientY - offsetY.value
+
   const rotation = ((item.rotation ?? 0) * Math.PI) / 180
   const halfWidth = item.width / 2
   const halfHeight = item.height / 2
@@ -442,16 +468,24 @@ const stopDrag = () => {
   // Remove global listeners
   document.removeEventListener('mousemove', onDrag)
   document.removeEventListener('mouseup', stopDrag)
+  document.removeEventListener('touchmove', onDrag)
+  document.removeEventListener('touchend', stopDrag)
 }
 
 // Ensure global event listeners are removed when component is unmounted
 onUnmounted(() => {
   document.removeEventListener('mousemove', onDrag)
   document.removeEventListener('mouseup', stopDrag)
+  document.removeEventListener('touchmove', onDrag)
+  document.removeEventListener('touchend', stopDrag)
   document.removeEventListener('mousemove', onResize)
   document.removeEventListener('mouseup', stopResize)
+  document.removeEventListener('touchmove', onResize)
+  document.removeEventListener('touchend', stopResize)
   document.removeEventListener('mousemove', onRotate)
   document.removeEventListener('mouseup', stopRotate)
+  document.removeEventListener('touchmove', onRotate)
+  document.removeEventListener('touchend', stopRotate)
 })
 </script>
 
