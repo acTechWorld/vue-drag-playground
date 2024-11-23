@@ -8,7 +8,7 @@
       :style="{
         left: item.x + 'px',
         top: item.y + 'px',
-        transform: `rotate(${item.rotation}deg)`,
+        transform: `rotate(${item.rotation}deg) translate3d(0, 0, 0)`,
       }"
       @mousedown="startDrag($event, index)"
     >
@@ -55,10 +55,12 @@ const props = withDefaults(
   defineProps<{
     items?: DraggableItem[]
     resizable?: boolean
+    throttleDelay?: number
   }>(),
   {
     items: () => [],
     resizable: false,
+    throttleDelay: 1,
   },
 )
 
@@ -73,8 +75,6 @@ const initialMouseX = ref(0)
 const initialMouseY = ref(0)
 const initialWidth = ref(0)
 const initialHeight = ref(0)
-const initialX = ref(0)
-const initialY = ref(0)
 
 //ROTATION
 const initialAngle = ref(0)
@@ -97,6 +97,18 @@ const emit = defineEmits([
 /**
  * METHODS
  */
+
+//UTILS
+const throttle = (func: (args: any) => void, delay: number) => {
+  let lastCall = 0
+  return function (...args: any[]) {
+    const now = Date.now()
+    if (now - lastCall >= delay) {
+      func(...args)
+      lastCall = now
+    }
+  }
+}
 
 //RESIZE
 const updateResize = (index: number) => {
@@ -150,7 +162,7 @@ const clamp = (value: number, min: number, max: number) => {
   return Math.max(min, Math.min(value, max))
 }
 
-const onResize = (event: MouseEvent) => {
+const onResize = throttle((event: MouseEvent) => {
   const playground = document.querySelector('.vue-drag-playground')
   if (!playground || resizingIndex.value === null || resizingHandle.value === null) return
 
@@ -239,15 +251,50 @@ const onResize = (event: MouseEvent) => {
   newX = newCenterX - newWidth / 2
   newY = newCenterY - newHeight / 2
 
+  // Ensure the item stays within bounds considering rotation
+  const newCorners = [
+    { x: -newWidth / 2, y: -newHeight / 2 }, // New Top-left
+    { x: newWidth / 2, y: -newHeight / 2 }, // New Top-right
+    { x: newWidth / 2, y: newHeight / 2 }, // New Bottom-right
+    { x: -newWidth / 2, y: newHeight / 2 }, // New Bottom-left
+  ].map((corner) => ({
+    x: newCenterX + corner.x * cos - corner.y * sin,
+    y: newCenterY + corner.x * sin + corner.y * cos,
+  }))
+
+  const minX = Math.min(...newCorners.map((corner) => corner.x))
+  const maxX = Math.max(...newCorners.map((corner) => corner.x))
+  const minY = Math.min(...newCorners.map((corner) => corner.y))
+  const maxY = Math.max(...newCorners.map((corner) => corner.y))
+
+  let counterCornerBorder = 0
+  if (minX < 0) {
+    newX -= minX
+    counterCornerBorder += 1
+  }
+  if (minY < 0) {
+    newY -= minY
+    counterCornerBorder += 1
+  }
+  if (maxX > playgroundBounds.width) {
+    newX -= maxX - playgroundBounds.width
+    counterCornerBorder += 1
+  }
+  if (maxY > playgroundBounds.height) {
+    newY -= maxY - playgroundBounds.height
+    counterCornerBorder += 1
+  }
+  if (counterCornerBorder >= 2) return
+
   // Apply the calculated size and position
   item.width = newWidth
   item.height = newHeight
-  item.x = clamp(newX, 0, playgroundBounds.width - newWidth)
-  item.y = clamp(newY, 0, playgroundBounds.height - newHeight)
+  item.x = newX
+  item.y = newY
 
   emit('resizing', resizingIndex.value)
   updateResize(resizingIndex.value)
-}
+}, props.throttleDelay)
 
 const stopResize = () => {
   emit('resize-end', resizingIndex.value)
@@ -273,7 +320,6 @@ const startRotate = (event: MouseEvent, index: number) => {
     initialMouseY.value = event.clientY
     const dx = initialMouseX.value - centerX.value
     const dy = initialMouseY.value - centerY.value
-    console.log()
     initialAngle.value = Math.atan2(dy, dx) * (180 / Math.PI) - (item.rotation ?? 0)
 
     // Add global listeners for rotation
@@ -283,18 +329,47 @@ const startRotate = (event: MouseEvent, index: number) => {
   }
 }
 
-const onRotate = (event: MouseEvent) => {
-  if (rotatingIndex.value === null) return
+const onRotate = throttle((event: MouseEvent) => {
+  const playground = document.querySelector('.vue-drag-playground')
+  if (!playground || rotatingIndex.value === null) return
   const item = refItems.value[rotatingIndex.value]
+  const playgroundBounds = playground.getBoundingClientRect()
 
   // Calculate the new angle
   const dx = event.clientX - centerX.value
   const dy = event.clientY - centerY.value
   const angle = Math.atan2(dy, dx) * (180 / Math.PI)
+
+  const rotation = angle - initialAngle.value
+  const newRotation = ((rotation ?? 0) * Math.PI) / 180
+  const cos = Math.cos(newRotation)
+  const sin = Math.sin(newRotation)
+
+  const halfWidth = item.width / 2
+  const halfHeight = item.height / 2
+
+  // Ensure the item stays within bounds considering rotation
+  const newCorners = [
+    { x: -halfWidth, y: -halfHeight }, // New Top-left
+    { x: halfWidth, y: -halfHeight }, // New Top-right
+    { x: halfWidth, y: halfHeight }, // New Bottom-right
+    { x: -halfWidth, y: halfHeight }, // New Bottom-left
+  ].map((corner) => ({
+    x: item.x + halfWidth + corner.x * cos - corner.y * sin,
+    y: item.y + halfHeight + corner.x * sin + corner.y * cos,
+  }))
+
+  const minX = Math.min(...newCorners.map((corner) => corner.x))
+  const maxX = Math.max(...newCorners.map((corner) => corner.x))
+  const minY = Math.min(...newCorners.map((corner) => corner.y))
+  const maxY = Math.max(...newCorners.map((corner) => corner.y))
+  if (minX < 0 || minY < 0 || maxX > playgroundBounds.width || maxY > playgroundBounds.height) {
+    return
+  }
   // Update the item's rotation
-  item.rotation = angle - initialAngle.value
+  item.rotation = rotation
   emit('rotating', rotatingIndex.value)
-}
+}, props.throttleDelay)
 
 const stopRotate = () => {
   if (rotatingIndex.value !== null) emit('rotation-end', rotatingIndex.value)
@@ -319,7 +394,7 @@ const startDrag = (event: MouseEvent, index: number) => {
   document.addEventListener('mouseup', stopDrag)
 }
 
-const onDrag = (event: MouseEvent) => {
+const onDrag = throttle((event: MouseEvent) => {
   const playground = document.querySelector('.vue-drag-playground')
   if (!playground || currentDragIndex.value === null || currentDragEl.value === null) return
 
@@ -359,7 +434,7 @@ const onDrag = (event: MouseEvent) => {
     0 - halfHeight + maxY,
     Math.min(newY, playgroundBounds.height - (halfHeight + maxY)),
   )
-}
+}, props.throttleDelay)
 
 const stopDrag = () => {
   currentDragIndex.value = null
@@ -373,6 +448,10 @@ const stopDrag = () => {
 onUnmounted(() => {
   document.removeEventListener('mousemove', onDrag)
   document.removeEventListener('mouseup', stopDrag)
+  document.removeEventListener('mousemove', onResize)
+  document.removeEventListener('mouseup', stopResize)
+  document.removeEventListener('mousemove', onRotate)
+  document.removeEventListener('mouseup', stopRotate)
 })
 </script>
 
