@@ -4,47 +4,73 @@
       v-for="(item, index) in refItems"
       :key="index"
       class="w-fit h-fit absolute group"
-      :class="currentDragIndex === index ? 'cursor-grabbing' : 'cursor-grab'"
       :style="{
         left: item.x + 'px',
         top: item.y + 'px',
-        transform: `rotate(${item.rotation}deg) translate3d(0, 0, 0)`,
       }"
-      @mousedown.stop="startDrag($event, index)"
-      @touchstart.stop="startDrag($event, index)"
     >
-      <div :class="`item-${index}`" v-html="item.html"></div>
+      <!-- Copy and Delete buttons -->
       <div
-        class="w-4 h-4 absolute bg-white/50 rounded-[50%] cursor-nesw-resize -top-1 -right-1 hidden group-hover:block"
-        @mousedown.stop="startResize($event, index, 'top-right')"
-        @touchstart.stop="startResize($event, index, 'top-right')"
-      ></div>
+        class="group-hover:opacity-100 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none opacity-0 absolute flex top-0 right-0 pl-5 pb-[100%] translate-x-full"
+        :class="{ 'opacity-100': interactIndex === index }"
+      >
+        <button class="bg-blue-500 text-white p-1 m-1 rounded" @click.stop="copyItem(index)">
+          Copy
+        </button>
+        <button class="bg-red-500 text-white p-1 m-1 rounded" @click.stop="deleteItem(index)">
+          Delete
+        </button>
+      </div>
       <div
-        class="w-4 h-4 absolute bg-white/50 rounded-[50%] cursor-nwse-resize -top-1 -left-1 hidden group-hover:block"
-        @mousedown.stop="startResize($event, index, 'top-left')"
-        @touchstart.stop="startResize($event, index, 'top-left')"
-      ></div>
-      <div
-        class="w-4 h-4 absolute bg-white/50 rounded-[50%] cursor-nwse-resize -bottom-1 -right-1 hidden group-hover:block"
-        @mousedown.stop="startResize($event, index, 'bottom-right')"
-        @touchstart.stop="startResize($event, index, 'bottom-right')"
-      ></div>
-      <div
-        class="w-4 h-4 absolute bg-white/50 rounded-[50%] cursor-nesw-resize -bottom-1 -left-1 hidden group-hover:block"
-        @mousedown.stop="startResize($event, index, 'bottom-left')"
-        @touchstart.stop="startResize($event, index, 'bottom-left')"
-      ></div>
-      <div
-        class="w-4 h-4 absolute bg-blue-500 rounded-[50%] cursor-pointer -top-6 left-1/2 transform -translate-x-1/2"
-        @mousedown.stop="startRotate($event, index)"
-        @touchstart.stop="startRotate($event, index)"
-      ></div>
+        :class="interactIndex === index ? 'cursor-grabbing' : 'cursor-grab'"
+        :style="{
+          transform: `rotate(${item.rotation}deg) translate3d(0, 0, 0)`,
+        }"
+        @mousedown.stop="startDrag($event, index)"
+        @touchstart.stop="startDrag($event, index)"
+      >
+        <div :class="`item-${index}`" v-html="item.html"></div>
+        <div
+          class="w-4 h-4 absolute bg-white/50 rounded-[50%] cursor-nesw-resize -top-1 -right-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none"
+          :class="{ 'opacity-100': interactIndex === index }"
+          @mousedown.stop="startResize($event, index, 'top-right')"
+          @touchstart.stop="startResize($event, index, 'top-right')"
+        ></div>
+        <div
+          class="w-4 h-4 absolute bg-white/50 rounded-[50%] cursor-nwse-resize -top-1 -left-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none"
+          :class="{ 'opacity-100': interactIndex === index }"
+          @mousedown.stop="startResize($event, index, 'top-left')"
+          @touchstart.stop="startResize($event, index, 'top-left')"
+        ></div>
+        <div
+          class="w-4 h-4 absolute bg-white/50 rounded-[50%] cursor-nwse-resize -bottom-1 -right-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none"
+          :class="{ 'opacity-100': interactIndex === index }"
+          @mousedown.stop="startResize($event, index, 'bottom-right')"
+          @touchstart.stop="startResize($event, index, 'bottom-right')"
+        ></div>
+        <div
+          class="w-4 h-4 absolute bg-white/50 rounded-[50%] cursor-nesw-resize -bottom-1 -left-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none"
+          :class="{ 'opacity-100': interactIndex === index }"
+          @mousedown.stop="startResize($event, index, 'bottom-left')"
+          @touchstart.stop="startResize($event, index, 'bottom-left')"
+        ></div>
+        <div
+          class="absolute top-0 flex w-full h-10 -translate-y-full group-hover:pointer-events-auto pointer-events-none"
+        >
+          <div
+            class="w-4 h-4 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none absolute bg-blue-500 rounded-[50%] cursor-pointer top-4 left-1/2 transform -translate-x-1/2"
+            :class="{ 'opacity-100': interactIndex === index }"
+            @mousedown.stop="startRotate($event, index)"
+            @touchstart.stop="startRotate($event, index)"
+          ></div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onUnmounted } from 'vue'
+import { ref, onUnmounted, onMounted, nextTick } from 'vue'
 
 interface DraggableItem {
   html: string // HTML string to render
@@ -71,11 +97,10 @@ const props = withDefaults(
 )
 
 const refItems = ref(props.items)
-const currentDragIndex = ref<number | null>(null) // Track the dragged item
+const interactIndex = ref<number | null>(null)
 const currentDragEl = ref<HTMLElement | null>(null)
 const offsetX = ref(0) // Track X offset
 const offsetY = ref(0) // Track Y offset
-const resizingIndex = ref<number | null>(null)
 const resizingHandle = ref<ResizingHandle | null>(null)
 const initialMouseX = ref(0)
 const initialMouseY = ref(0)
@@ -85,7 +110,6 @@ const initialHeight = ref(0)
 //ROTATION
 const initialAngle = ref(0)
 const centerX = ref(0)
-const rotatingIndex = ref<number | null>(null)
 const centerY = ref(0)
 
 const emit = defineEmits([
@@ -114,6 +138,30 @@ const throttle = (func: (event: MouseEvent | TouchEvent) => void, delay: number)
       lastCall = now
     }
   }
+}
+//COPY
+const copyItem = (index: number) => {
+  const item = refItems.value[index]
+
+  if (item) {
+    console.log(item)
+    // Create a shallow copy of the item properties, adjust position slightly to avoid overlap
+    const newItem = {
+      ...item,
+      x: item.x + 20, // Adjust x position to prevent overlap
+      y: item.y + 20, // Adjust y position to prevent overlap
+      html: item.html, // Preserve HTML content
+    }
+    refItems.value.push(newItem) // Add the copied item to the list
+    nextTick(() => {
+      updateResize(refItems.value.length - 1)
+    })
+  }
+}
+
+//DELETE
+const deleteItem = (index: number) => {
+  refItems.value.splice(index, 1) // Remove the item from the list
 }
 
 //RESIZE
@@ -152,7 +200,7 @@ const startResize = (event: MouseEvent | TouchEvent, index: number, handle: Resi
     const item = refItems.value[index]
     const itemEl = document.querySelector(`.item-${index}`)
     if (itemEl && item) {
-      resizingIndex.value = index
+      interactIndex.value = index
       resizingHandle.value = handle
       const isTouch = event instanceof TouchEvent
       initialMouseX.value = isTouch ? event.touches[0].clientX : event.clientX
@@ -172,9 +220,9 @@ const clamp = (value: number, min: number, max: number) => {
 const onResize = throttle((event: MouseEvent | TouchEvent) => {
   event.stopPropagation()
   const playground = document.querySelector('.vue-drag-playground')
-  if (!playground || resizingIndex.value === null || resizingHandle.value === null) return
+  if (!playground || interactIndex.value === null || resizingHandle.value === null) return
 
-  const item = refItems.value[resizingIndex.value]
+  const item = refItems.value[interactIndex.value]
   const playgroundBounds = playground.getBoundingClientRect()
 
   // Calculate rotation
@@ -304,13 +352,13 @@ const onResize = throttle((event: MouseEvent | TouchEvent) => {
   item.x = newX
   item.y = newY
 
-  emit('resizing', resizingIndex.value)
-  updateResize(resizingIndex.value)
+  emit('resizing', interactIndex.value)
+  updateResize(interactIndex.value)
 }, props.throttleDelay)
 
 const stopResize = () => {
-  emit('resize-end', resizingIndex.value)
-  resizingIndex.value = null
+  emit('resize-end', interactIndex.value)
+  interactIndex.value = null
   document.removeEventListener('mousemove', onResize)
   document.removeEventListener('mouseup', stopResize)
   document.removeEventListener('touchmove', onResize)
@@ -322,7 +370,7 @@ const startRotate = (event: MouseEvent | TouchEvent, index: number) => {
   const item = refItems.value[index]
   const itemEl = document.querySelector(`.item-${index}`)
   if (itemEl && item) {
-    rotatingIndex.value = index
+    interactIndex.value = index
 
     // Calculate the center of the element
     const bounds = (itemEl as HTMLElement).getBoundingClientRect()
@@ -347,8 +395,8 @@ const startRotate = (event: MouseEvent | TouchEvent, index: number) => {
 const onRotate = throttle((event: MouseEvent | TouchEvent) => {
   event.stopPropagation()
   const playground = document.querySelector('.vue-drag-playground')
-  if (!playground || rotatingIndex.value === null) return
-  const item = refItems.value[rotatingIndex.value]
+  if (!playground || interactIndex.value === null) return
+  const item = refItems.value[interactIndex.value]
   const playgroundBounds = playground.getBoundingClientRect()
 
   const isTouch = event instanceof TouchEvent
@@ -387,12 +435,12 @@ const onRotate = throttle((event: MouseEvent | TouchEvent) => {
   }
   // Update the item's rotation
   item.rotation = rotation
-  emit('rotating', rotatingIndex.value)
+  emit('rotating', interactIndex.value)
 }, props.throttleDelay)
 
 const stopRotate = () => {
-  if (rotatingIndex.value !== null) emit('rotation-end', rotatingIndex.value)
-  rotatingIndex.value = null
+  if (interactIndex.value !== null) emit('rotation-end', interactIndex.value)
+  interactIndex.value = null
 
   // Remove global listeners
   document.removeEventListener('mousemove', onRotate)
@@ -404,7 +452,7 @@ const stopRotate = () => {
 //DRAG
 const startDrag = (event: MouseEvent | TouchEvent, index: number) => {
   emit('drag-start', index)
-  currentDragIndex.value = index
+  interactIndex.value = index
   currentDragEl.value = event.currentTarget as HTMLElement
 
   const item = refItems.value[index]
@@ -419,12 +467,12 @@ const startDrag = (event: MouseEvent | TouchEvent, index: number) => {
 const onDrag = throttle((event: MouseEvent | TouchEvent) => {
   event.stopPropagation()
   const playground = document.querySelector('.vue-drag-playground')
-  if (!playground || currentDragIndex.value === null || currentDragEl.value === null) return
+  if (!playground || interactIndex.value === null || currentDragEl.value === null) return
 
-  emit('dragging', currentDragIndex.value)
+  emit('dragging', interactIndex.value)
 
   const playgroundBounds = playground.getBoundingClientRect()
-  const item = refItems.value[currentDragIndex.value]
+  const item = refItems.value[interactIndex.value]
   const isTouch = event instanceof TouchEvent
   const clientX = isTouch ? event.touches[0].clientX : event.clientX
   const clientY = isTouch ? event.touches[0].clientY : event.clientY
@@ -463,14 +511,24 @@ const onDrag = throttle((event: MouseEvent | TouchEvent) => {
 }, props.throttleDelay)
 
 const stopDrag = () => {
-  currentDragIndex.value = null
-  emit('drag-end', currentDragIndex.value)
+  interactIndex.value = null
+  emit('drag-end', interactIndex.value)
   // Remove global listeners
   document.removeEventListener('mousemove', onDrag)
   document.removeEventListener('mouseup', stopDrag)
   document.removeEventListener('touchmove', onDrag)
   document.removeEventListener('touchend', stopDrag)
 }
+
+onMounted(() => {
+  props.items?.map((item, idx) => {
+    const itemEl = document.querySelector(`.item-${idx}`)
+    if (itemEl) {
+      item.width = itemEl?.getBoundingClientRect().width
+      item.height = itemEl?.getBoundingClientRect().height
+    }
+  })
+})
 
 // Ensure global event listeners are removed when component is unmounted
 onUnmounted(() => {
