@@ -13,7 +13,7 @@ dist
 dist-ssr
 coverage
 *.local
-
+.npmrc
 /cypress/videos/
 /cypress/screenshots/
 
@@ -26,5 +26,6 @@ coverage
 *.njsproj
 *.sln
 *.sw?
-
+storybook-static
+storybook-static.zip
 *.tsbuildinfo
