@@ -11,25 +11,40 @@
     >
       <!-- Copy and Delete buttons -->
       <div
-        class="group-hover:opacity-100 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none opacity-0 absolute flex top-0 right-0 pl-5 pb-[100%] translate-x-full"
+        class="z-0 group-hover:opacity-100 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none opacity-0 absolute flex -top-7 pl-[calc(100%_+_30px)] pb-[100%] gap-2"
         :class="{ 'opacity-100': interactIndex === index }"
       >
-        <button class="bg-blue-500 text-white p-1 m-1 rounded" @click.stop="copyItem(index)">
-          Copy
-        </button>
-        <button class="bg-red-500 text-white p-1 m-1 rounded" @click.stop="deleteItem(index)">
-          Delete
-        </button>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 448 512"
+          class="fill-black h-5 cursor-pointer"
+          @click.stop="copyItem(index)"
+        >
+          <path
+            d="M208 0L332.1 0c12.7 0 24.9 5.1 33.9 14.1l67.9 67.9c9 9 14.1 21.2 14.1 33.9L448 336c0 26.5-21.5 48-48 48l-192 0c-26.5 0-48-21.5-48-48l0-288c0-26.5 21.5-48 48-48zM48 128l80 0 0 64-64 0 0 256 192 0 0-32 64 0 0 48c0 26.5-21.5 48-48 48L48 512c-26.5 0-48-21.5-48-48L0 176c0-26.5 21.5-48 48-48z"
+          />
+        </svg>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 448 512"
+          class="fill-black h-5 cursor-pointer"
+          @click.stop="deleteItem(index)"
+        >
+          <path
+            d="M135.2 17.7L128 32 32 32C14.3 32 0 46.3 0 64S14.3 96 32 96l384 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-96 0-7.2-14.3C307.4 6.8 296.3 0 284.2 0L163.8 0c-12.1 0-23.2 6.8-28.6 17.7zM416 128L32 128 53.2 467c1.6 25.3 22.6 45 47.9 45l245.8 0c25.3 0 46.3-19.7 47.9-45L416 128z"
+          />
+        </svg>
       </div>
       <div
         :class="interactIndex === index ? 'cursor-grabbing' : 'cursor-grab'"
+        class="z-[1] relative"
         :style="{
           transform: `rotate(${item.rotation}deg) translate3d(0, 0, 0)`,
         }"
         @mousedown.stop="startDrag($event, index)"
         @touchstart.stop="startDrag($event, index)"
       >
-        <div :class="`item-${index}`" v-html="item.html"></div>
+        <div :class="`item-${index}`" v-html="DOMPurify.sanitize(item.html)"></div>
         <div
           class="w-4 h-4 absolute bg-white/50 rounded-[50%] cursor-nesw-resize -top-1 -right-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none"
           :class="{ 'opacity-100': interactIndex === index }"
@@ -57,12 +72,24 @@
         <div
           class="absolute top-0 flex w-full h-10 -translate-y-full group-hover:pointer-events-auto pointer-events-none"
         >
-          <div
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 512 512"
+            class="w-6 h-6 p-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none absolute bg-blue-500 rounded-[50%] cursor-pointer top-2 left-1/2 transform -translate-x-1/2 fill-white"
+            :class="{ 'opacity-100': interactIndex === index }"
+            @mousedown.stop="startRotate($event, index)"
+            @touchstart.stop="startRotate($event, index)"
+          >
+            <path
+              d="M142.9 142.9c-17.5 17.5-30.1 38-37.8 59.8c-5.9 16.7-24.2 25.4-40.8 19.5s-25.4-24.2-19.5-40.8C55.6 150.7 73.2 122 97.6 97.6c87.2-87.2 228.3-87.5 315.8-1L455 55c6.9-6.9 17.2-8.9 26.2-5.2s14.8 12.5 14.8 22.2l0 128c0 13.3-10.7 24-24 24l-8.4 0c0 0 0 0 0 0L344 224c-9.7 0-18.5-5.8-22.2-14.8s-1.7-19.3 5.2-26.2l41.1-41.1c-62.6-61.5-163.1-61.2-225.3 1zM16 312c0-13.3 10.7-24 24-24l7.6 0 .7 0L168 288c9.7 0 18.5 5.8 22.2 14.8s1.7 19.3-5.2 26.2l-41.1 41.1c62.6 61.5 163.1 61.2 225.3-1c17.5-17.5 30.1-38 37.8-59.8c5.9-16.7 24.2-25.4 40.8-19.5s25.4 24.2 19.5 40.8c-10.8 30.6-28.4 59.3-52.9 83.8c-87.2 87.2-228.3 87.5-315.8 1L57 457c-6.9 6.9-17.2 8.9-26.2 5.2S16 449.7 16 440l0-119.6 0-.7 0-7.6z"
+            />
+          </svg>
+          <!-- <div
             class="w-4 h-4 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none absolute bg-blue-500 rounded-[50%] cursor-pointer top-4 left-1/2 transform -translate-x-1/2"
             :class="{ 'opacity-100': interactIndex === index }"
             @mousedown.stop="startRotate($event, index)"
             @touchstart.stop="startRotate($event, index)"
-          ></div>
+          ></div> -->
         </div>
       </div>
     </div>
@@ -71,7 +98,7 @@
 
 <script setup lang="ts">
 import { ref, onUnmounted, onMounted, nextTick } from 'vue'
-
+import DOMPurify from 'dompurify'
 interface DraggableItem {
   html: string // HTML string to render
   x: number // X-coordinate for position
@@ -96,16 +123,22 @@ const props = withDefaults(
   },
 )
 
+//COMMON
 const refItems = ref(props.items)
+const copiedItemIndex = ref<number | null>(null) // Temporary storage for the copied item
 const interactIndex = ref<number | null>(null)
-const currentDragEl = ref<HTMLElement | null>(null)
+
+//DRAG
 const offsetX = ref(0) // Track X offset
 const offsetY = ref(0) // Track Y offset
-const resizingHandle = ref<ResizingHandle | null>(null)
+const currentDragEl = ref<HTMLElement | null>(null)
+
+//RESIZE
 const initialMouseX = ref(0)
 const initialMouseY = ref(0)
 const initialWidth = ref(0)
 const initialHeight = ref(0)
+const resizingHandle = ref<ResizingHandle | null>(null)
 
 //ROTATION
 const initialAngle = ref(0)
@@ -139,12 +172,27 @@ const throttle = (func: (event: MouseEvent | TouchEvent) => void, delay: number)
     }
   }
 }
+
+const handleKeyDown = (event: KeyboardEvent) => {
+  const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0
+  const isCtrl = isMac ? event.metaKey : event.ctrlKey
+
+  if (isCtrl && event.key === 'c' && interactIndex.value !== null) {
+    // Copy logic
+    event.preventDefault() // Prevent default browser behavior
+    copiedItemIndex.value = interactIndex.value
+  } else if (isCtrl && event.key === 'v' && copiedItemIndex.value !== null) {
+    // Paste logic
+    event.preventDefault() // Prevent default browser behavior
+    copyItem(copiedItemIndex.value)
+    copiedItemIndex.value = null
+  }
+}
+
 //COPY
 const copyItem = (index: number) => {
   const item = refItems.value[index]
-
   if (item) {
-    console.log(item)
     // Create a shallow copy of the item properties, adjust position slightly to avoid overlap
     const newItem = {
       ...item,
@@ -162,6 +210,7 @@ const copyItem = (index: number) => {
 //DELETE
 const deleteItem = (index: number) => {
   refItems.value.splice(index, 1) // Remove the item from the list
+  interactIndex.value = null
 }
 
 //RESIZE
@@ -528,10 +577,12 @@ onMounted(() => {
       item.height = itemEl?.getBoundingClientRect().height
     }
   })
+  document.addEventListener('keydown', handleKeyDown)
 })
 
 // Ensure global event listeners are removed when component is unmounted
 onUnmounted(() => {
+  document.removeEventListener('keydown', handleKeyDown)
   document.removeEventListener('mousemove', onDrag)
   document.removeEventListener('mouseup', stopDrag)
   document.removeEventListener('touchmove', onDrag)
