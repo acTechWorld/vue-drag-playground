@@ -184,6 +184,7 @@ function createRotatedCursor(angle: number) {
 }
 
 const calculateMenuPos = (index: number) => {
+  const item = refItems.value[index]
   const itemEl = document.querySelector(`.item-${index}`)
   const playground = document.querySelector('.vue-drag-playground')
 
@@ -193,15 +194,31 @@ const calculateMenuPos = (index: number) => {
 
     if (bounds.right + 70 > playgroundBounds.width) {
       if (bounds.top > 70) {
-        return { top: '-60px', paddingBottom: '100%' }
+        return {
+          top: '-60px',
+          paddingBottom: `${item.height + 40}px`,
+          paddingRight: `${item.width - 40}px`,
+        }
       } else {
-        return { bottom: '-60px', paddingTop: '100%' }
+        return {
+          bottom: '-60px',
+          paddingTop: `${item.height + 40}px`,
+          paddingRight: `${item.width - 40}px`,
+        }
       }
     } else {
       if (bounds.top > 70) {
-        return { paddingLeft: 'calc(100% + 30px)', top: '-28px', paddingBottom: '100%' }
+        return {
+          paddingLeft: `${item.width + 30}px`,
+          top: '-28px',
+          paddingBottom: `${item.height + 10}px`,
+        }
       } else {
-        return { paddingLeft: 'calc(100% + 30px)', bottom: '-28px', paddingTop: '100%' }
+        return {
+          paddingLeft: `${item.width + 30}px`,
+          bottom: '-28px',
+          paddingTop: `${item.height + 10}px`,
+        }
       }
     }
   }
@@ -613,6 +630,7 @@ onMounted(() => {
     if (itemEl) {
       item.width = itemEl?.getBoundingClientRect().width
       item.height = itemEl?.getBoundingClientRect().height
+      item.rotation = item.rotation ?? 0
     }
   })
   document.addEventListener('keydown', handleKeyDown)
