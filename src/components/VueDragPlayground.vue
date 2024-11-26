@@ -185,15 +185,13 @@ function createRotatedCursor(angle: number) {
 
 const calculateMenuPos = (index: number) => {
   const item = refItems.value[index]
-  const itemEl = document.querySelector(`.item-${index}`)
   const playground = document.querySelector('.vue-drag-playground')
 
-  if (itemEl && playground) {
-    const bounds = itemEl.getBoundingClientRect()
+  if (playground) {
     const playgroundBounds = playground.getBoundingClientRect()
 
-    if (bounds.right + 70 > playgroundBounds.width) {
-      if (bounds.top > 70) {
+    if (item.x + item.width + 75 > playgroundBounds.width) {
+      if (item.y > 70) {
         return {
           top: '-60px',
           paddingBottom: `${item.height + 40}px`,
@@ -207,7 +205,7 @@ const calculateMenuPos = (index: number) => {
         }
       }
     } else {
-      if (bounds.top > 70) {
+      if (item.y > 70) {
         return {
           paddingLeft: `${item.width + 30}px`,
           top: '-28px',
