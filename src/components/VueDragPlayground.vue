@@ -11,8 +11,9 @@
     >
       <!-- Copy and Delete buttons -->
       <div
-        class="z-0 group-hover:opacity-100 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none opacity-0 absolute flex -top-7 pl-[calc(100%_+_30px)] pb-[100%] gap-2"
+        class="z-0 group-hover:z-[2] group-hover:opacity-100 transition-opacity duration-500 group-hover:pointer-events-auto pointer-events-none opacity-0 absolute flex gap-2"
         :class="{ 'opacity-100': interactIndex === index }"
+        :style="calculateMenuPos(index)"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -37,7 +38,7 @@
       </div>
       <div
         :class="interactIndex === index ? 'cursor-grabbing' : 'cursor-grab'"
-        class="z-[1] relative"
+        class="z-[1] relative group-hover:z-[3]"
         :style="{
           transform: `rotate(${item.rotation}deg) translate3d(0, 0, 0)`,
         }"
@@ -46,26 +47,30 @@
       >
         <div :class="`item-${index}`" v-html="DOMPurify.sanitize(item.html)"></div>
         <div
-          class="w-4 h-4 absolute bg-white/50 rounded-[50%] cursor-nesw-resize -top-1 -right-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none"
+          class="w-4 h-4 absolute bg-white/50 rounded-[50%] -top-1 -right-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none"
           :class="{ 'opacity-100': interactIndex === index }"
+          :style="{ cursor: `url(${createRotatedCursor(item.rotation - 45)}) 8 8, auto` }"
           @mousedown.stop="startResize($event, index, 'top-right')"
           @touchstart.stop="startResize($event, index, 'top-right')"
         ></div>
         <div
-          class="w-4 h-4 absolute bg-white/50 rounded-[50%] cursor-nwse-resize -top-1 -left-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none"
+          class="w-4 h-4 absolute bg-white/50 rounded-[50%] -top-1 -left-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none"
           :class="{ 'opacity-100': interactIndex === index }"
+          :style="{ cursor: `url(${createRotatedCursor(item.rotation + 45)}) 8 8, auto` }"
           @mousedown.stop="startResize($event, index, 'top-left')"
           @touchstart.stop="startResize($event, index, 'top-left')"
         ></div>
         <div
-          class="w-4 h-4 absolute bg-white/50 rounded-[50%] cursor-nwse-resize -bottom-1 -right-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none"
+          class="w-4 h-4 absolute bg-white/50 rounded-[50%] -bottom-1 -right-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none"
           :class="{ 'opacity-100': interactIndex === index }"
+          :style="{ cursor: `url(${createRotatedCursor(item.rotation - 135)}) 8 8, auto` }"
           @mousedown.stop="startResize($event, index, 'bottom-right')"
           @touchstart.stop="startResize($event, index, 'bottom-right')"
         ></div>
         <div
-          class="w-4 h-4 absolute bg-white/50 rounded-[50%] cursor-nesw-resize -bottom-1 -left-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none"
+          class="w-4 h-4 absolute bg-white/50 rounded-[50%] -bottom-1 -left-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none"
           :class="{ 'opacity-100': interactIndex === index }"
+          :style="{ cursor: `url(${createRotatedCursor(item.rotation + 135)}) 8 8, auto` }"
           @mousedown.stop="startResize($event, index, 'bottom-left')"
           @touchstart.stop="startResize($event, index, 'bottom-left')"
         ></div>
@@ -84,12 +89,6 @@
               d="M142.9 142.9c-17.5 17.5-30.1 38-37.8 59.8c-5.9 16.7-24.2 25.4-40.8 19.5s-25.4-24.2-19.5-40.8C55.6 150.7 73.2 122 97.6 97.6c87.2-87.2 228.3-87.5 315.8-1L455 55c6.9-6.9 17.2-8.9 26.2-5.2s14.8 12.5 14.8 22.2l0 128c0 13.3-10.7 24-24 24l-8.4 0c0 0 0 0 0 0L344 224c-9.7 0-18.5-5.8-22.2-14.8s-1.7-19.3 5.2-26.2l41.1-41.1c-62.6-61.5-163.1-61.2-225.3 1zM16 312c0-13.3 10.7-24 24-24l7.6 0 .7 0L168 288c9.7 0 18.5 5.8 22.2 14.8s1.7 19.3-5.2 26.2l-41.1 41.1c62.6 61.5 163.1 61.2 225.3-1c17.5-17.5 30.1-38 37.8-59.8c5.9-16.7 24.2-25.4 40.8-19.5s25.4 24.2 19.5 40.8c-10.8 30.6-28.4 59.3-52.9 83.8c-87.2 87.2-228.3 87.5-315.8 1L57 457c-6.9 6.9-17.2 8.9-26.2 5.2S16 449.7 16 440l0-119.6 0-.7 0-7.6z"
             />
           </svg>
-          <!-- <div
-            class="w-4 h-4 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none absolute bg-blue-500 rounded-[50%] cursor-pointer top-4 left-1/2 transform -translate-x-1/2"
-            :class="{ 'opacity-100': interactIndex === index }"
-            @mousedown.stop="startRotate($event, index)"
-            @touchstart.stop="startRotate($event, index)"
-          ></div> -->
         </div>
       </div>
     </div>
@@ -173,6 +172,42 @@ const throttle = (func: (event: MouseEvent | TouchEvent) => void, delay: number)
   }
 }
 
+function createRotatedCursor(angle: number) {
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 512 512">
+      <g transform="rotate(${angle}, 256, 256)">
+        <path d="M504.3 273.6c4.9-4.5 7.7-10.9 7.7-17.6s-2.8-13-7.7-17.6l-112-104c-7-6.5-17.2-8.2-25.9-4.4s-14.4 12.5-14.4 22v56H160v-56c0-9.5-5.7-18.2-14.4-22s-18.9-2.1-25.9 4.4l-112 104C2.8 243 0 249.3 0 256s2.8 13 7.7 17.6l112 104c7 6.5 17.2 8.2 25.9 4.4s14.4-12.5 14.4-22v-56h192v56c0 9.5 5.7 18.2 14.4 22s18.9 2.1 25.9-4.4l112-104z"/>
+      </g>
+    </svg>
+  `
+  return `data:image/svg+xml;base64,${btoa(svg)}`
+}
+
+const calculateMenuPos = (index: number) => {
+  const itemEl = document.querySelector(`.item-${index}`)
+  const playground = document.querySelector('.vue-drag-playground')
+
+  if (itemEl && playground) {
+    const bounds = itemEl.getBoundingClientRect()
+    const playgroundBounds = playground.getBoundingClientRect()
+
+    if (bounds.right + 70 > playgroundBounds.width) {
+      if (bounds.top > 70) {
+        return { top: '-60px', paddingBottom: '100%' }
+      } else {
+        return { bottom: '-60px', paddingTop: '100%' }
+      }
+    } else {
+      if (bounds.top > 70) {
+        return { paddingLeft: 'calc(100% + 30px)', top: '-28px', paddingBottom: '100%' }
+      } else {
+        return { paddingLeft: 'calc(100% + 30px)', bottom: '-28px', paddingTop: '100%' }
+      }
+    }
+  }
+  return { paddingLeft: 'calc(100% + 30px)', top: '-28px', paddingBottom: '100%' }
+}
+
 const handleKeyDown = (event: KeyboardEvent) => {
   const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0
   const isCtrl = isMac ? event.metaKey : event.ctrlKey
@@ -210,6 +245,9 @@ const copyItem = (index: number) => {
 //DELETE
 const deleteItem = (index: number) => {
   refItems.value.splice(index, 1) // Remove the item from the list
+  nextTick(() => {
+    updateResize(index)
+  })
   interactIndex.value = null
 }
 
@@ -597,5 +635,3 @@ onUnmounted(() => {
   document.removeEventListener('touchend', stopRotate)
 })
 </script>
-
-<style scoped></style>
