@@ -11,17 +11,17 @@
     >
       <!-- Copy and Delete buttons -->
       <div
-        v-if="isCopy || isDelete"
+        v-if="(isCopy || isDelete) && !isCtrl"
         class="z-0 group-hover:z-[2] group-hover:opacity-100 transition-opacity duration-500 group-hover:pointer-events-auto pointer-events-none opacity-0 absolute flex gap-2"
-        :class="{ 'opacity-100': interactIndex === index }"
-        :style="calculateMenuPos(index)"
+        :class="{ 'opacity-100': interactId === item.id }"
+        :style="calculateMenuPos(item.id)"
       >
         <svg
           v-if="isCopy"
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 448 512"
           class="fill-black h-5 cursor-pointer"
-          @click.stop="copyItem(index)"
+          @click.stop="copyItem(item.id)"
         >
           <path
             d="M208 0L332.1 0c12.7 0 24.9 5.1 33.9 14.1l67.9 67.9c9 9 14.1 21.2 14.1 33.9L448 336c0 26.5-21.5 48-48 48l-192 0c-26.5 0-48-21.5-48-48l0-288c0-26.5 21.5-48 48-48zM48 128l80 0 0 64-64 0 0 256 192 0 0-32 64 0 0 48c0 26.5-21.5 48-48 48L48 512c-26.5 0-48-21.5-48-48L0 176c0-26.5 21.5-48 48-48z"
@@ -32,7 +32,7 @@
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 448 512"
           class="fill-black h-5 cursor-pointer"
-          @click.stop="deleteItem(index)"
+          @click.stop="deleteItem(item.id)"
         >
           <path
             d="M135.2 17.7L128 32 32 32C14.3 32 0 46.3 0 64S14.3 96 32 96l384 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-96 0-7.2-14.3C307.4 6.8 296.3 0 284.2 0L163.8 0c-12.1 0-23.2 6.8-28.6 17.7zM416 128L32 128 53.2 467c1.6 25.3 22.6 45 47.9 45l245.8 0c25.3 0 46.3-19.7 47.9-45L416 128z"
@@ -41,58 +41,61 @@
       </div>
       <div
         :class="{
-          'cursor-grabbing': interactIndex === index && isDrag,
-          'cursor-grab': interactIndex !== index && isDrag,
+          'cursor-grabbing': interactId === item.id && isDrag && !isCtrl,
+          'cursor-grab': interactId !== item.id && isDrag && !isCtrl,
+          'cursor-pointer': isCtrl,
+          'border-dashed border-2 border-black': ctrlSelectedItemsId.includes(item.id),
         }"
         class="z-[1] relative group-hover:z-[3]"
         :style="{
           transform: `rotate(${item.rotation}deg) translate3d(0, 0, 0)`,
         }"
-        @mousedown.stop="startDrag($event, index)"
-        @touchstart.stop="startDrag($event, index)"
+        @click="handleClickItem(item.id)"
+        @mousedown.stop="startDrag($event, item.id)"
+        @touchstart.stop="startDrag($event, item.id)"
       >
-        <div :class="`item-${index}`" v-html="DOMPurify.sanitize(item.html)"></div>
-        <div v-if="isResize">
+        <div :class="`item-${item.id}`" v-html="DOMPurify.sanitize(transformHtmlItem(item))"></div>
+        <div v-if="isResize && !isCtrl">
           <div
             class="w-4 h-4 absolute bg-white/50 rounded-[50%] -top-1 -right-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none"
-            :class="{ 'opacity-100': interactIndex === index }"
+            :class="{ 'opacity-100': interactId === item.id }"
             :style="{ cursor: `url(${createRotatedCursor(item.rotation - 45)}) 8 8, auto` }"
-            @mousedown.stop="startResize($event, index, 'top-right')"
-            @touchstart.stop="startResize($event, index, 'top-right')"
+            @mousedown.stop="startResize($event, item.id, 'top-right')"
+            @touchstart.stop="startResize($event, item.id, 'top-right')"
           ></div>
           <div
             class="w-4 h-4 absolute bg-white/50 rounded-[50%] -top-1 -left-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none"
-            :class="{ 'opacity-100': interactIndex === index }"
+            :class="{ 'opacity-100': interactId === item.id }"
             :style="{ cursor: `url(${createRotatedCursor(item.rotation + 45)}) 8 8, auto` }"
-            @mousedown.stop="startResize($event, index, 'top-left')"
-            @touchstart.stop="startResize($event, index, 'top-left')"
+            @mousedown.stop="startResize($event, item.id, 'top-left')"
+            @touchstart.stop="startResize($event, item.id, 'top-left')"
           ></div>
           <div
             class="w-4 h-4 absolute bg-white/50 rounded-[50%] -bottom-1 -right-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none"
-            :class="{ 'opacity-100': interactIndex === index }"
+            :class="{ 'opacity-100': interactId === item.id }"
             :style="{ cursor: `url(${createRotatedCursor(item.rotation - 135)}) 8 8, auto` }"
-            @mousedown.stop="startResize($event, index, 'bottom-right')"
-            @touchstart.stop="startResize($event, index, 'bottom-right')"
+            @mousedown.stop="startResize($event, item.id, 'bottom-right')"
+            @touchstart.stop="startResize($event, item.id, 'bottom-right')"
           ></div>
           <div
             class="w-4 h-4 absolute bg-white/50 rounded-[50%] -bottom-1 -left-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none"
-            :class="{ 'opacity-100': interactIndex === index }"
+            :class="{ 'opacity-100': interactId === item.id }"
             :style="{ cursor: `url(${createRotatedCursor(item.rotation + 135)}) 8 8, auto` }"
-            @mousedown.stop="startResize($event, index, 'bottom-left')"
-            @touchstart.stop="startResize($event, index, 'bottom-left')"
+            @mousedown.stop="startResize($event, item.id, 'bottom-left')"
+            @touchstart.stop="startResize($event, item.id, 'bottom-left')"
           ></div>
         </div>
         <div
-          v-if="isRotate"
+          v-if="isRotate && !isCtrl"
           class="absolute top-0 flex w-full h-10 -translate-y-full group-hover:pointer-events-auto pointer-events-none"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 512 512"
             class="w-6 h-6 p-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none absolute bg-blue-500 rounded-[50%] cursor-pointer top-2 left-1/2 transform -translate-x-1/2 fill-white"
-            :class="{ 'opacity-100': interactIndex === index }"
-            @mousedown.stop="startRotate($event, index)"
-            @touchstart.stop="startRotate($event, index)"
+            :class="{ 'opacity-100': interactId === item.id }"
+            @mousedown.stop="startRotate($event, item.id)"
+            @touchstart.stop="startRotate($event, item.id)"
           >
             <path
               d="M142.9 142.9c-17.5 17.5-30.1 38-37.8 59.8c-5.9 16.7-24.2 25.4-40.8 19.5s-25.4-24.2-19.5-40.8C55.6 150.7 73.2 122 97.6 97.6c87.2-87.2 228.3-87.5 315.8-1L455 55c6.9-6.9 17.2-8.9 26.2-5.2s14.8 12.5 14.8 22.2l0 128c0 13.3-10.7 24-24 24l-8.4 0c0 0 0 0 0 0L344 224c-9.7 0-18.5-5.8-22.2-14.8s-1.7-19.3 5.2-26.2l41.1-41.1c-62.6-61.5-163.1-61.2-225.3 1zM16 312c0-13.3 10.7-24 24-24l7.6 0 .7 0L168 288c9.7 0 18.5 5.8 22.2 14.8s1.7 19.3-5.2 26.2l-41.1 41.1c62.6 61.5 163.1 61.2 225.3-1c17.5-17.5 30.1-38 37.8-59.8c5.9-16.7 24.2-25.4 40.8-19.5s25.4 24.2 19.5 40.8c-10.8 30.6-28.4 59.3-52.9 83.8c-87.2 87.2-228.3 87.5-315.8 1L57 457c-6.9 6.9-17.2 8.9-26.2 5.2S16 449.7 16 440l0-119.6 0-.7 0-7.6z"
@@ -105,7 +108,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onUnmounted, onMounted, nextTick, watch } from 'vue'
+import { ref, onUnmounted, onMounted, nextTick, watch, type Ref } from 'vue'
 import DOMPurify from 'dompurify'
 interface DraggableItem {
   html: string // HTML string to render
@@ -145,9 +148,11 @@ const props = withDefaults(
 const refItems = ref(
   props.items?.map((item, idx) => ({ ...item, id: idx }))?.slice(0, props.maxNumberOfItems),
 )
+const ctrlSelectedItemsId: Ref<number[]> = ref([])
 const maxIdUsed = ref(props.items?.length - 1)
-const copiedItemIndex = ref<number | null>(null) // Temporary storage for the copied item
-const interactIndex = ref<number | null>(null)
+const interactId = ref<number | null>(null)
+const isCtrl = ref(false)
+const isCtrlC = ref(false)
 
 //DRAG
 const offsetX = ref(0) // Track X offset
@@ -205,11 +210,11 @@ function createRotatedCursor(angle: number) {
   return `data:image/svg+xml;base64,${btoa(svg)}`
 }
 
-const calculateMenuPos = (index: number) => {
-  const item = refItems.value[index]
+const calculateMenuPos = (id: number) => {
+  const item = refItems.value.find((item) => item.id === id)
   const playground = document.querySelector('.vue-drag-playground')
 
-  if (playground) {
+  if (playground && item) {
     const playgroundBounds = playground.getBoundingClientRect()
 
     if (item.x + item.width + 75 > playgroundBounds.width) {
@@ -246,25 +251,30 @@ const calculateMenuPos = (index: number) => {
 }
 
 const handleKeyDown = (event: KeyboardEvent) => {
-  const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0
-  const isCtrl = isMac ? event.metaKey : event.ctrlKey
+  if (isCtrl.value) {
+    if (event.key === 'c') {
+      // Copy logic
+      isCtrlC.value = true
+    } else if (isCtrlC.value && event.key === 'v') {
+      // Paste logic
+      ctrlSelectedItemsId.value.forEach((id) => copyItem(id))
+    }
+  } else {
+    isCtrl.value = event.key === 'Control' || event.key === 'Meta'
+  }
+}
 
-  if (isCtrl && event.key === 'c' && interactIndex.value !== null) {
-    // Copy logic
-    event.preventDefault() // Prevent default browser behavior
-    copiedItemIndex.value = interactIndex.value
-  } else if (isCtrl && event.key === 'v' && copiedItemIndex.value !== null) {
-    // Paste logic
-    event.preventDefault() // Prevent default browser behavior
-    copyItem(copiedItemIndex.value)
-    copiedItemIndex.value = null
+const handleKeyUp = (event: KeyboardEvent) => {
+  console.log(event)
+  if (event.key === 'Control' || event.key === 'Meta') {
+    isCtrl.value = false
   }
 }
 
 //COPY
-const copyItem = (index: number) => {
+const copyItem = (id: number) => {
   if (!props.maxNumberOfItems || props.maxNumberOfItems > refItems.value.length) {
-    const item = refItems.value[index]
+    const item = refItems.value.find((item) => item.id === id)
     if (item) {
       // Create a shallow copy of the item properties, adjust position slightly to avoid overlap
       const newItem = {
@@ -276,59 +286,65 @@ const copyItem = (index: number) => {
       }
       refItems.value.push(newItem) // Add the copied item to the list
       maxIdUsed.value += 1
-      nextTick(() => {
-        updateResize(refItems.value.length - 1)
-      })
     }
   }
 }
 
 //DELETE
-const deleteItem = (index: number) => {
-  refItems.value.splice(index, 1) // Remove the item from the list
-  nextTick(() => {
-    updateResize(index)
-  })
-  interactIndex.value = null
+const deleteItem = (id: number) => {
+  refItems.value = refItems.value.filter((item) => item.id !== id)
+  interactId.value = null
 }
 
-//RESIZE
-const updateResize = (index: number) => {
-  const itemEl = document.querySelector(`.item-${index}`)
-  const item = refItems.value[index]
-  if (itemEl && item) {
-    const child = itemEl.children?.[0]
-    if (child) {
-      const currentStyles = child.getAttribute('style') || ''
-      // Parse current styles into a map
-      const stylesMap = new Map(
-        currentStyles
-          .split(';')
-          .map((style) => {
-            const [key, value] = style.split(':').map((s) => s.trim())
-            return key && value ? [key, value] : null
-          })
-          .filter(Boolean) as [string, string][],
-      )
-
-      // Add computed styles for fallback (if needed)
-      if (item.width) stylesMap.set('width', `${item.width}px`)
-      if (item.height) stylesMap.set('height', `${item.height}px`)
-      // Reconstruct the style string
-      const updatedStyleString = Array.from(stylesMap)
-        .map(([key, value]) => `${key}: ${value}`)
-        .join('; ')
-      child.setAttribute('style', updatedStyleString)
+//CTRL CLICK
+const handleClickItem = (id: number) => {
+  if (isCtrl.value) {
+    if (ctrlSelectedItemsId.value.includes(id)) {
+      ctrlSelectedItemsId.value = ctrlSelectedItemsId.value.filter((itemId) => itemId !== id)
+    } else {
+      ctrlSelectedItemsId.value.push(id)
     }
   }
 }
-const startResize = (event: MouseEvent | TouchEvent, index: number, handle: ResizingHandle) => {
-  if (props.isResize) {
-    emit('resize-start', index, handle)
-    const item = refItems.value[index]
-    const itemEl = document.querySelector(`.item-${index}`)
+
+//RESIZE
+
+const transformHtmlItem = (item: DraggableItem) => {
+  const tempDiv = document.createElement('div')
+  tempDiv.innerHTML = DOMPurify.sanitize(item.html)
+  const child = tempDiv.children?.[0]
+  if (child) {
+    const currentStyles = child.getAttribute('style') || ''
+    // Parse current styles into a map
+    const stylesMap = new Map(
+      currentStyles
+        .split(';')
+        .map((style) => {
+          const [key, value] = style.split(':').map((s) => s.trim())
+          return key && value ? [key, value] : null
+        })
+        .filter(Boolean) as [string, string][],
+    )
+
+    // Add computed styles for fallback (if needed)
+    if (item.width) stylesMap.set('width', `${item.width}px`)
+    if (item.height) stylesMap.set('height', `${item.height}px`)
+    // Reconstruct the style string
+    const updatedStyleString = Array.from(stylesMap)
+      .map(([key, value]) => `${key}: ${value}`)
+      .join('; ')
+    child.setAttribute('style', updatedStyleString)
+    return child.outerHTML
+  }
+  return ''
+}
+const startResize = (event: MouseEvent | TouchEvent, id: number, handle: ResizingHandle) => {
+  if (props.isResize && !isCtrl.value) {
+    const item = refItems.value.find((item) => item.id === id)
+    const itemEl = document.querySelector(`.item-${id}`)
     if (itemEl && item) {
-      interactIndex.value = index
+      emit('resize-start', item, handle)
+      interactId.value = id
       resizingHandle.value = handle
       const isTouch = event instanceof TouchEvent
       initialMouseX.value = isTouch ? event.touches[0].clientX : event.clientX
@@ -348,9 +364,9 @@ const clamp = (value: number, min: number, max: number) => {
 const onResize = throttle((event: MouseEvent | TouchEvent) => {
   event.stopPropagation()
   const playground = document.querySelector('.vue-drag-playground')
-  if (!playground || interactIndex.value === null || resizingHandle.value === null) return
+  const item = refItems.value.find((item) => item.id === interactId.value)
+  if (!playground || !item || interactId.value === null || resizingHandle.value === null) return
 
-  const item = refItems.value[interactIndex.value]
   const playgroundBounds = playground.getBoundingClientRect()
 
   // Calculate rotation
@@ -480,13 +496,13 @@ const onResize = throttle((event: MouseEvent | TouchEvent) => {
   item.x = newX
   item.y = newY
 
-  emit('resizing', interactIndex.value)
-  updateResize(interactIndex.value)
+  emit('resizing', item)
 }, props.throttleDelay)
 
 const stopResize = () => {
-  emit('resize-end', interactIndex.value)
-  interactIndex.value = null
+  const item = refItems.value.find((item) => item.id === interactId.value)
+  emit('resize-end', item)
+  interactId.value = null
   document.removeEventListener('mousemove', onResize)
   document.removeEventListener('mouseup', stopResize)
   document.removeEventListener('touchmove', onResize)
@@ -494,12 +510,12 @@ const stopResize = () => {
 }
 
 //ROTATE
-const startRotate = (event: MouseEvent | TouchEvent, index: number) => {
-  if (props.isRotate) {
-    const item = refItems.value[index]
-    const itemEl = document.querySelector(`.item-${index}`)
+const startRotate = (event: MouseEvent | TouchEvent, id: number) => {
+  if (props.isRotate && !isCtrl.value) {
+    const item = refItems.value.find((item) => item.id === id)
+    const itemEl = document.querySelector(`.item-${id}`)
     if (itemEl && item) {
-      interactIndex.value = index
+      interactId.value = id
 
       // Calculate the center of the element
       const bounds = (itemEl as HTMLElement).getBoundingClientRect()
@@ -517,7 +533,7 @@ const startRotate = (event: MouseEvent | TouchEvent, index: number) => {
       // Add global listeners for rotation
       document.addEventListener(isTouch ? 'touchmove' : 'mousemove', onRotate)
       document.addEventListener(isTouch ? 'touchend' : 'mouseup', stopRotate)
-      emit('rotation-start', index)
+      emit('rotation-start', item)
     }
   }
 }
@@ -525,8 +541,9 @@ const startRotate = (event: MouseEvent | TouchEvent, index: number) => {
 const onRotate = throttle((event: MouseEvent | TouchEvent) => {
   event.stopPropagation()
   const playground = document.querySelector('.vue-drag-playground')
-  if (!playground || interactIndex.value === null) return
-  const item = refItems.value[interactIndex.value]
+  const item = refItems.value.find((item) => item.id === interactId.value)
+
+  if (!playground || !item || interactId.value === null) return
   const playgroundBounds = playground.getBoundingClientRect()
 
   const isTouch = event instanceof TouchEvent
@@ -565,12 +582,13 @@ const onRotate = throttle((event: MouseEvent | TouchEvent) => {
   }
   // Update the item's rotation
   item.rotation = rotation
-  emit('rotating', interactIndex.value)
+  emit('rotating', item)
 }, props.throttleDelay)
 
 const stopRotate = () => {
-  if (interactIndex.value !== null) emit('rotation-end', interactIndex.value)
-  interactIndex.value = null
+  const item = refItems.value.find((item) => item.id === interactId.value)
+  emit('rotation-end', item)
+  interactId.value = null
 
   // Remove global listeners
   document.removeEventListener('mousemove', onRotate)
@@ -580,31 +598,34 @@ const stopRotate = () => {
 }
 
 //DRAG
-const startDrag = (event: MouseEvent | TouchEvent, index: number) => {
-  if (props.isDrag) {
-    emit('drag-start', index)
-    interactIndex.value = index
-    currentDragEl.value = event.currentTarget as HTMLElement
+const startDrag = (event: MouseEvent | TouchEvent, id: number) => {
+  if (props.isDrag && !isCtrl.value) {
+    const item = refItems.value.find((item) => item.id === id)
+    if (item) {
+      emit('drag-start', item)
+      interactId.value = id
+      currentDragEl.value = event.currentTarget as HTMLElement
 
-    const item = refItems.value[index]
-    const isTouch = event instanceof TouchEvent
-    offsetX.value = isTouch ? event.touches[0].clientX - item.x : event.clientX - item.x
-    offsetY.value = isTouch ? event.touches[0].clientY - item.y : event.clientY - item.y
-    // Add global listeners for dragging
-    document.addEventListener(isTouch ? 'touchmove' : 'mousemove', onDrag)
-    document.addEventListener(isTouch ? 'touchend' : 'mouseup', stopDrag)
+      const isTouch = event instanceof TouchEvent
+      offsetX.value = isTouch ? event.touches[0].clientX - item.x : event.clientX - item.x
+      offsetY.value = isTouch ? event.touches[0].clientY - item.y : event.clientY - item.y
+      // Add global listeners for dragging
+      document.addEventListener(isTouch ? 'touchmove' : 'mousemove', onDrag)
+      document.addEventListener(isTouch ? 'touchend' : 'mouseup', stopDrag)
+    }
   }
 }
 
 const onDrag = throttle((event: MouseEvent | TouchEvent) => {
   event.stopPropagation()
   const playground = document.querySelector('.vue-drag-playground')
-  if (!playground || interactIndex.value === null || currentDragEl.value === null) return
+  const item = refItems.value.find((item) => item.id === interactId.value)
 
-  emit('dragging', interactIndex.value)
+  if (!playground || !item || interactId.value === null || currentDragEl.value === null) return
+
+  emit('dragging', item)
 
   const playgroundBounds = playground.getBoundingClientRect()
-  const item = refItems.value[interactIndex.value]
   const isTouch = event instanceof TouchEvent
   const clientX = isTouch ? event.touches[0].clientX : event.clientX
   const clientY = isTouch ? event.touches[0].clientY : event.clientY
@@ -643,8 +664,9 @@ const onDrag = throttle((event: MouseEvent | TouchEvent) => {
 }, props.throttleDelay)
 
 const stopDrag = () => {
-  interactIndex.value = null
-  emit('drag-end', interactIndex.value)
+  const item = refItems.value.find((item) => item.id === interactId.value)
+  emit('drag-end', item)
+  interactId.value = null
   // Remove global listeners
   document.removeEventListener('mousemove', onDrag)
   document.removeEventListener('mouseup', stopDrag)
@@ -653,8 +675,8 @@ const stopDrag = () => {
 }
 
 const initItems = () => {
-  refItems.value?.map((item, idx) => {
-    const itemEl = document.querySelector(`.item-${idx}`)
+  refItems.value?.map((item) => {
+    const itemEl = document.querySelector(`.item-${item.id}`)
     if (itemEl) {
       item.width = itemEl.clientWidth
       item.height = itemEl.clientHeight
@@ -667,11 +689,13 @@ const initItems = () => {
 onMounted(() => {
   initItems()
   document.addEventListener('keydown', handleKeyDown)
+  document.addEventListener('keyup', handleKeyUp)
 })
 
 // Ensure global event listeners are removed when component is unmounted
 onUnmounted(() => {
   document.removeEventListener('keydown', handleKeyDown)
+  document.removeEventListener('keyup', handleKeyUp)
   document.removeEventListener('mousemove', onDrag)
   document.removeEventListener('mouseup', stopDrag)
   document.removeEventListener('touchmove', onDrag)
