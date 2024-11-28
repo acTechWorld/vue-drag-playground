@@ -274,13 +274,32 @@ const handleKeyUp = (event: KeyboardEvent) => {
 //COPY
 const copyItem = (id: number) => {
   if (!props.maxNumberOfItems || props.maxNumberOfItems > refItems.value.length) {
+    const playground = document.querySelector('.vue-drag-playground')
     const item = refItems.value.find((item) => item.id === id)
-    if (item) {
+    if (item && playground) {
+      const rotation = ((item.rotation ?? 0) * Math.PI) / 180
+      const halfWidth = item.width / 2
+      const halfHeight = item.height / 2
+      // Calculate rotated corners relative to the center
+      const corners = [
+        { x: -halfWidth, y: -halfHeight }, // Top-left
+        { x: halfWidth, y: -halfHeight }, // Top-right
+        { x: halfWidth, y: halfHeight }, // Bottom-right
+        { x: -halfWidth, y: halfHeight }, // Bottom-left
+      ].map((corner) => ({
+        x: item.x + halfWidth + corner.x * Math.cos(rotation) - corner.y * Math.sin(rotation),
+        y: item.y + halfHeight + corner.x * Math.sin(rotation) + corner.y * Math.cos(rotation),
+      }))
+
+      // Get maximum offsets caused by rotation
+      const maxX = Math.max(...corners.map((corner) => corner.x))
+      const maxY = Math.max(...corners.map((corner) => corner.y))
+      const playgroundBounds = playground.getBoundingClientRect()
       // Create a shallow copy of the item properties, adjust position slightly to avoid overlap
       const newItem = {
         ...item,
-        x: item.x + 20, // Adjust x position to prevent overlap
-        y: item.y + 20, // Adjust y position to prevent overlap
+        x: maxX + 20 < playgroundBounds.width ? item.x + 20 : item.x - 20, // Adjust x position to prevent overlap
+        y: maxY + 20 < playgroundBounds.height ? item.y + 20 : item.y - 20, // Adjust y position to prevent overlap
         html: item.html, // Preserve HTML content
         id: maxIdUsed.value + 1,
       }
@@ -308,7 +327,6 @@ const handleClickItem = (id: number) => {
 }
 
 //RESIZE
-
 const transformHtmlItem = (item: DraggableItem) => {
   const tempDiv = document.createElement('div')
   tempDiv.innerHTML = DOMPurify.sanitize(item.html)
