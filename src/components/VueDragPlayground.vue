@@ -105,7 +105,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onUnmounted, onMounted, nextTick } from 'vue'
+import { ref, onUnmounted, onMounted, nextTick, watch } from 'vue'
 import DOMPurify from 'dompurify'
 interface DraggableItem {
   html: string // HTML string to render
@@ -127,6 +127,7 @@ const props = withDefaults(
     isCopy?: boolean
     isDelete?: boolean
     throttleDelay?: number
+    maxNumberOfItems?: number | undefined
   }>(),
   {
     items: () => [],
@@ -136,11 +137,15 @@ const props = withDefaults(
     isCopy: false,
     isDelete: false,
     throttleDelay: 1,
+    maxNumberOfItems: undefined,
   },
 )
 
 //COMMON
-const refItems = ref(props.items)
+const refItems = ref(
+  props.items?.map((item, idx) => ({ ...item, id: idx }))?.slice(0, props.maxNumberOfItems),
+)
+const maxIdUsed = ref(props.items?.length - 1)
 const copiedItemIndex = ref<number | null>(null) // Temporary storage for the copied item
 const interactIndex = ref<number | null>(null)
 
@@ -258,19 +263,23 @@ const handleKeyDown = (event: KeyboardEvent) => {
 
 //COPY
 const copyItem = (index: number) => {
-  const item = refItems.value[index]
-  if (item) {
-    // Create a shallow copy of the item properties, adjust position slightly to avoid overlap
-    const newItem = {
-      ...item,
-      x: item.x + 20, // Adjust x position to prevent overlap
-      y: item.y + 20, // Adjust y position to prevent overlap
-      html: item.html, // Preserve HTML content
+  if (!props.maxNumberOfItems || props.maxNumberOfItems > refItems.value.length) {
+    const item = refItems.value[index]
+    if (item) {
+      // Create a shallow copy of the item properties, adjust position slightly to avoid overlap
+      const newItem = {
+        ...item,
+        x: item.x + 20, // Adjust x position to prevent overlap
+        y: item.y + 20, // Adjust y position to prevent overlap
+        html: item.html, // Preserve HTML content
+        id: maxIdUsed.value + 1,
+      }
+      refItems.value.push(newItem) // Add the copied item to the list
+      maxIdUsed.value += 1
+      nextTick(() => {
+        updateResize(refItems.value.length - 1)
+      })
     }
-    refItems.value.push(newItem) // Add the copied item to the list
-    nextTick(() => {
-      updateResize(refItems.value.length - 1)
-    })
   }
 }
 
@@ -643,15 +652,20 @@ const stopDrag = () => {
   document.removeEventListener('touchend', stopDrag)
 }
 
-onMounted(() => {
-  props.items?.map((item, idx) => {
+const initItems = () => {
+  refItems.value?.map((item, idx) => {
     const itemEl = document.querySelector(`.item-${idx}`)
     if (itemEl) {
-      item.width = itemEl?.getBoundingClientRect().width
-      item.height = itemEl?.getBoundingClientRect().height
+      item.width = itemEl.clientWidth
+      item.height = itemEl.clientHeight
       item.rotation = item.rotation ?? 0
     }
   })
+}
+
+//LIFECYCLE
+onMounted(() => {
+  initItems()
   document.addEventListener('keydown', handleKeyDown)
 })
 
@@ -671,4 +685,33 @@ onUnmounted(() => {
   document.removeEventListener('touchmove', onRotate)
   document.removeEventListener('touchend', stopRotate)
 })
+
+//WATCH
+watch(
+  () => props.maxNumberOfItems,
+  () => {
+    if (props.maxNumberOfItems !== undefined) {
+      if (props.maxNumberOfItems > refItems.value.length) {
+        //We increase the list with props items currently not displayed to equal max number
+        const propsItemsNotDisplayed = props.items
+          .map((item, idx) => ({ ...item, id: idx }))
+          ?.filter((item) => !refItems.value.map((item) => item.id).includes(item.id))
+          ?.slice(0, props.maxNumberOfItems - refItems.value.length)
+        refItems.value = [...refItems.value, ...propsItemsNotDisplayed]
+      } else {
+        //We reduce the list
+        refItems.value = refItems.value.slice(0, props.maxNumberOfItems)
+      }
+    } else {
+      //Undefined = Max numbers of items => actual items + props items currently not displayed
+      const propsItemsNotDisplayed = props.items
+        .map((item, idx) => ({ ...item, id: idx }))
+        ?.filter((item) => !refItems.value.map((item) => item.id).includes(item.id))
+      refItems.value = [...refItems.value, ...propsItemsNotDisplayed]
+    }
+    nextTick(() => {
+      initItems()
+    })
+  },
+)
 </script>

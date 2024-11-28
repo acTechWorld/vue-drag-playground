@@ -29,15 +29,23 @@ Default.args = {
       y: 50,
       width: 100,
       height: 24,
+      rotation: 50,
     },
     {
       html: "<div class='yo' style='background: yellow; padding: 10px;'>Box</div>",
       x: 350,
       y: 300,
     },
+    {
+      html: "<div class='yo' style='background: green; padding: 10px;'>Box</div>",
+      x: 100,
+      y: 600,
+      rotation: -50,
+    },
   ],
   isResize: true,
   isRotate: true,
   isCopy: true,
   isDelete: true,
+  maxNumberOfItems: 10,
 }
