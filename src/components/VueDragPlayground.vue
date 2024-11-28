@@ -11,11 +11,13 @@
     >
       <!-- Copy and Delete buttons -->
       <div
+        v-if="isCopy || isDelete"
         class="z-0 group-hover:z-[2] group-hover:opacity-100 transition-opacity duration-500 group-hover:pointer-events-auto pointer-events-none opacity-0 absolute flex gap-2"
         :class="{ 'opacity-100': interactIndex === index }"
         :style="calculateMenuPos(index)"
       >
         <svg
+          v-if="isCopy"
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 448 512"
           class="fill-black h-5 cursor-pointer"
@@ -26,6 +28,7 @@
           />
         </svg>
         <svg
+          v-if="isDelete"
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 448 512"
           class="fill-black h-5 cursor-pointer"
@@ -37,7 +40,10 @@
         </svg>
       </div>
       <div
-        :class="interactIndex === index ? 'cursor-grabbing' : 'cursor-grab'"
+        :class="{
+          'cursor-grabbing': interactIndex === index && isDrag,
+          'cursor-grab': interactIndex !== index && isDrag,
+        }"
         class="z-[1] relative group-hover:z-[3]"
         :style="{
           transform: `rotate(${item.rotation}deg) translate3d(0, 0, 0)`,
@@ -46,35 +52,38 @@
         @touchstart.stop="startDrag($event, index)"
       >
         <div :class="`item-${index}`" v-html="DOMPurify.sanitize(item.html)"></div>
+        <div v-if="isResize">
+          <div
+            class="w-4 h-4 absolute bg-white/50 rounded-[50%] -top-1 -right-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none"
+            :class="{ 'opacity-100': interactIndex === index }"
+            :style="{ cursor: `url(${createRotatedCursor(item.rotation - 45)}) 8 8, auto` }"
+            @mousedown.stop="startResize($event, index, 'top-right')"
+            @touchstart.stop="startResize($event, index, 'top-right')"
+          ></div>
+          <div
+            class="w-4 h-4 absolute bg-white/50 rounded-[50%] -top-1 -left-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none"
+            :class="{ 'opacity-100': interactIndex === index }"
+            :style="{ cursor: `url(${createRotatedCursor(item.rotation + 45)}) 8 8, auto` }"
+            @mousedown.stop="startResize($event, index, 'top-left')"
+            @touchstart.stop="startResize($event, index, 'top-left')"
+          ></div>
+          <div
+            class="w-4 h-4 absolute bg-white/50 rounded-[50%] -bottom-1 -right-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none"
+            :class="{ 'opacity-100': interactIndex === index }"
+            :style="{ cursor: `url(${createRotatedCursor(item.rotation - 135)}) 8 8, auto` }"
+            @mousedown.stop="startResize($event, index, 'bottom-right')"
+            @touchstart.stop="startResize($event, index, 'bottom-right')"
+          ></div>
+          <div
+            class="w-4 h-4 absolute bg-white/50 rounded-[50%] -bottom-1 -left-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none"
+            :class="{ 'opacity-100': interactIndex === index }"
+            :style="{ cursor: `url(${createRotatedCursor(item.rotation + 135)}) 8 8, auto` }"
+            @mousedown.stop="startResize($event, index, 'bottom-left')"
+            @touchstart.stop="startResize($event, index, 'bottom-left')"
+          ></div>
+        </div>
         <div
-          class="w-4 h-4 absolute bg-white/50 rounded-[50%] -top-1 -right-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none"
-          :class="{ 'opacity-100': interactIndex === index }"
-          :style="{ cursor: `url(${createRotatedCursor(item.rotation - 45)}) 8 8, auto` }"
-          @mousedown.stop="startResize($event, index, 'top-right')"
-          @touchstart.stop="startResize($event, index, 'top-right')"
-        ></div>
-        <div
-          class="w-4 h-4 absolute bg-white/50 rounded-[50%] -top-1 -left-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none"
-          :class="{ 'opacity-100': interactIndex === index }"
-          :style="{ cursor: `url(${createRotatedCursor(item.rotation + 45)}) 8 8, auto` }"
-          @mousedown.stop="startResize($event, index, 'top-left')"
-          @touchstart.stop="startResize($event, index, 'top-left')"
-        ></div>
-        <div
-          class="w-4 h-4 absolute bg-white/50 rounded-[50%] -bottom-1 -right-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none"
-          :class="{ 'opacity-100': interactIndex === index }"
-          :style="{ cursor: `url(${createRotatedCursor(item.rotation - 135)}) 8 8, auto` }"
-          @mousedown.stop="startResize($event, index, 'bottom-right')"
-          @touchstart.stop="startResize($event, index, 'bottom-right')"
-        ></div>
-        <div
-          class="w-4 h-4 absolute bg-white/50 rounded-[50%] -bottom-1 -left-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none"
-          :class="{ 'opacity-100': interactIndex === index }"
-          :style="{ cursor: `url(${createRotatedCursor(item.rotation + 135)}) 8 8, auto` }"
-          @mousedown.stop="startResize($event, index, 'bottom-left')"
-          @touchstart.stop="startResize($event, index, 'bottom-left')"
-        ></div>
-        <div
+          v-if="isRotate"
           class="absolute top-0 flex w-full h-10 -translate-y-full group-hover:pointer-events-auto pointer-events-none"
         >
           <svg
@@ -112,12 +121,20 @@ type ResizingHandle = 'top-right' | 'bottom-right' | 'top-left' | 'bottom-left'
 const props = withDefaults(
   defineProps<{
     items?: DraggableItem[]
-    resizable?: boolean
+    isDrag?: boolean
+    isResize?: boolean
+    isRotate?: boolean
+    isCopy?: boolean
+    isDelete?: boolean
     throttleDelay?: number
   }>(),
   {
     items: () => [],
-    resizable: false,
+    isDrag: true,
+    isResize: false,
+    isRotate: false,
+    isCopy: false,
+    isDelete: false,
     throttleDelay: 1,
   },
 )
@@ -297,7 +314,7 @@ const updateResize = (index: number) => {
   }
 }
 const startResize = (event: MouseEvent | TouchEvent, index: number, handle: ResizingHandle) => {
-  if (props.resizable) {
+  if (props.isResize) {
     emit('resize-start', index, handle)
     const item = refItems.value[index]
     const itemEl = document.querySelector(`.item-${index}`)
@@ -469,28 +486,30 @@ const stopResize = () => {
 
 //ROTATE
 const startRotate = (event: MouseEvent | TouchEvent, index: number) => {
-  const item = refItems.value[index]
-  const itemEl = document.querySelector(`.item-${index}`)
-  if (itemEl && item) {
-    interactIndex.value = index
+  if (props.isRotate) {
+    const item = refItems.value[index]
+    const itemEl = document.querySelector(`.item-${index}`)
+    if (itemEl && item) {
+      interactIndex.value = index
 
-    // Calculate the center of the element
-    const bounds = (itemEl as HTMLElement).getBoundingClientRect()
-    centerX.value = bounds.left + bounds.width / 2
-    centerY.value = bounds.top + bounds.height / 2
+      // Calculate the center of the element
+      const bounds = (itemEl as HTMLElement).getBoundingClientRect()
+      centerX.value = bounds.left + bounds.width / 2
+      centerY.value = bounds.top + bounds.height / 2
 
-    const isTouch = event instanceof TouchEvent
-    initialMouseX.value = isTouch ? event.touches[0].clientX : event.clientX
-    initialMouseY.value = isTouch ? event.touches[0].clientY : event.clientY
-    const dx = initialMouseX.value - centerX.value
-    const dy = initialMouseY.value - centerY.value
+      const isTouch = event instanceof TouchEvent
+      initialMouseX.value = isTouch ? event.touches[0].clientX : event.clientX
+      initialMouseY.value = isTouch ? event.touches[0].clientY : event.clientY
+      const dx = initialMouseX.value - centerX.value
+      const dy = initialMouseY.value - centerY.value
 
-    initialAngle.value = Math.atan2(dy, dx) * (180 / Math.PI) - (item.rotation ?? 0)
+      initialAngle.value = Math.atan2(dy, dx) * (180 / Math.PI) - (item.rotation ?? 0)
 
-    // Add global listeners for rotation
-    document.addEventListener(isTouch ? 'touchmove' : 'mousemove', onRotate)
-    document.addEventListener(isTouch ? 'touchend' : 'mouseup', stopRotate)
-    emit('rotation-start', index)
+      // Add global listeners for rotation
+      document.addEventListener(isTouch ? 'touchmove' : 'mousemove', onRotate)
+      document.addEventListener(isTouch ? 'touchend' : 'mouseup', stopRotate)
+      emit('rotation-start', index)
+    }
   }
 }
 
@@ -553,17 +572,19 @@ const stopRotate = () => {
 
 //DRAG
 const startDrag = (event: MouseEvent | TouchEvent, index: number) => {
-  emit('drag-start', index)
-  interactIndex.value = index
-  currentDragEl.value = event.currentTarget as HTMLElement
+  if (props.isDrag) {
+    emit('drag-start', index)
+    interactIndex.value = index
+    currentDragEl.value = event.currentTarget as HTMLElement
 
-  const item = refItems.value[index]
-  const isTouch = event instanceof TouchEvent
-  offsetX.value = isTouch ? event.touches[0].clientX - item.x : event.clientX - item.x
-  offsetY.value = isTouch ? event.touches[0].clientY - item.y : event.clientY - item.y
-  // Add global listeners for dragging
-  document.addEventListener(isTouch ? 'touchmove' : 'mousemove', onDrag)
-  document.addEventListener(isTouch ? 'touchend' : 'mouseup', stopDrag)
+    const item = refItems.value[index]
+    const isTouch = event instanceof TouchEvent
+    offsetX.value = isTouch ? event.touches[0].clientX - item.x : event.clientX - item.x
+    offsetY.value = isTouch ? event.touches[0].clientY - item.y : event.clientY - item.y
+    // Add global listeners for dragging
+    document.addEventListener(isTouch ? 'touchmove' : 'mousemove', onDrag)
+    document.addEventListener(isTouch ? 'touchend' : 'mouseup', stopDrag)
+  }
 }
 
 const onDrag = throttle((event: MouseEvent | TouchEvent) => {
