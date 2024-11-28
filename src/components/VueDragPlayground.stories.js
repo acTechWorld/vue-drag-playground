@@ -48,4 +48,5 @@ Default.args = {
   isCopy: true,
   isDelete: true,
   maxNumberOfItems: 10,
+  throttleDelay: 1,
 }

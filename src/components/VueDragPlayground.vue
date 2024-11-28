@@ -1,5 +1,5 @@
 <template>
-  <div class="vue-drag-playground select-none relative">
+  <div class="vue-drag-playground select-none relative" @click="handleClickPlayground">
     <div
       v-for="(item, index) in refItems"
       :key="index"
@@ -59,28 +59,36 @@
           <div
             class="w-4 h-4 absolute bg-white/50 rounded-[50%] -top-1 -right-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none"
             :class="{ 'opacity-100': interactId === item.id }"
-            :style="{ cursor: `url(${createRotatedCursor(item.rotation - 45)}) 8 8, auto` }"
+            :style="{
+              cursor: `url(${createRotatedCursor(item.rotation - 45, item.id)}) 8 8, auto`,
+            }"
             @mousedown.stop="startResize($event, item.id, 'top-right')"
             @touchstart.stop="startResize($event, item.id, 'top-right')"
           ></div>
           <div
             class="w-4 h-4 absolute bg-white/50 rounded-[50%] -top-1 -left-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none"
             :class="{ 'opacity-100': interactId === item.id }"
-            :style="{ cursor: `url(${createRotatedCursor(item.rotation + 45)}) 8 8, auto` }"
+            :style="{
+              cursor: `url(${createRotatedCursor(item.rotation + 45, item.id)}) 8 8, auto`,
+            }"
             @mousedown.stop="startResize($event, item.id, 'top-left')"
             @touchstart.stop="startResize($event, item.id, 'top-left')"
           ></div>
           <div
             class="w-4 h-4 absolute bg-white/50 rounded-[50%] -bottom-1 -right-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none"
             :class="{ 'opacity-100': interactId === item.id }"
-            :style="{ cursor: `url(${createRotatedCursor(item.rotation - 135)}) 8 8, auto` }"
+            :style="{
+              cursor: `url(${createRotatedCursor(item.rotation - 135, item.id)}) 8 8, auto`,
+            }"
             @mousedown.stop="startResize($event, item.id, 'bottom-right')"
             @touchstart.stop="startResize($event, item.id, 'bottom-right')"
           ></div>
           <div
             class="w-4 h-4 absolute bg-white/50 rounded-[50%] -bottom-1 -left-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none"
             :class="{ 'opacity-100': interactId === item.id }"
-            :style="{ cursor: `url(${createRotatedCursor(item.rotation + 135)}) 8 8, auto` }"
+            :style="{
+              cursor: `url(${createRotatedCursor(item.rotation + 135, item.id)}) 8 8, auto`,
+            }"
             @mousedown.stop="startResize($event, item.id, 'bottom-left')"
             @touchstart.stop="startResize($event, item.id, 'bottom-left')"
           ></div>
@@ -92,8 +100,10 @@
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 512 512"
-            class="w-6 h-6 p-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none absolute bg-blue-500 rounded-[50%] cursor-pointer top-2 left-1/2 transform -translate-x-1/2 fill-white"
-            :class="{ 'opacity-100': interactId === item.id }"
+            class="w-6 h-6 p-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none absolute bg-black rounded-[50%] cursor-pointer top-2 left-1/2 transform -translate-x-1/2"
+            :class="[
+              interactId === item.id ? 'hover:fill-green-500 opacity-100 fill-white' : 'fill-white',
+            ]"
             @mousedown.stop="startRotate($event, item.id)"
             @touchstart.stop="startRotate($event, item.id)"
           >
@@ -199,10 +209,10 @@ const throttle = (func: (event: MouseEvent | TouchEvent) => void, delay: number)
   }
 }
 
-function createRotatedCursor(angle: number) {
+function createRotatedCursor(angle: number, id: number) {
   const svg = `
     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 512 512">
-      <g transform="rotate(${angle}, 256, 256)">
+      <g transform="rotate(${angle}, 256, 256)" fill="${interactId.value === id ? 'green' : 'black'}">
         <path d="M504.3 273.6c4.9-4.5 7.7-10.9 7.7-17.6s-2.8-13-7.7-17.6l-112-104c-7-6.5-17.2-8.2-25.9-4.4s-14.4 12.5-14.4 22v56H160v-56c0-9.5-5.7-18.2-14.4-22s-18.9-2.1-25.9 4.4l-112 104C2.8 243 0 249.3 0 256s2.8 13 7.7 17.6l112 104c7 6.5 17.2 8.2 25.9 4.4s14.4-12.5 14.4-22v-56h192v56c0 9.5 5.7 18.2 14.4 22s18.9 2.1 25.9-4.4l112-104z"/>
       </g>
     </svg>
@@ -258,6 +268,8 @@ const handleKeyDown = (event: KeyboardEvent) => {
     } else if (isCtrlC.value && event.key === 'v') {
       // Paste logic
       ctrlSelectedItemsId.value.forEach((id) => copyItem(id))
+    } else if (event.key === 'Delete' || event.key === 'Backspace') {
+      ctrlSelectedItemsId.value.forEach((id) => deleteItem(id))
     }
   } else {
     isCtrl.value = event.key === 'Control' || event.key === 'Meta'
@@ -268,6 +280,12 @@ const handleKeyUp = (event: KeyboardEvent) => {
   console.log(event)
   if (event.key === 'Control' || event.key === 'Meta') {
     isCtrl.value = false
+  }
+}
+
+const handleClickPlayground = () => {
+  if (!isCtrl.value) {
+    ctrlSelectedItemsId.value = []
   }
 }
 
