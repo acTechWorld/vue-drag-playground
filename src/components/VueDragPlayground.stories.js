@@ -14,7 +14,7 @@ const DefaultTemplate = (args) => ({
 
   template: `
     <div>      
-      <VueDragPlayground v-bind="args" ref="onboardingTourPoppin" class="w-full h-screen border-2 rounded-lg bg-blue-200"/>
+      <VueDragPlayground v-bind="args" ref="onboardingTourPoppin" class="w-full h-screen rounded-lg outline-black outline-2 outline bg-blue-200"/>
     </div>
   `,
 })
@@ -29,12 +29,25 @@ Default.args = {
       y: 50,
       width: 100,
       height: 24,
+      rotation: 50,
     },
     {
       html: "<div class='yo' style='background: yellow; padding: 10px;'>Box</div>",
       x: 350,
       y: 300,
     },
+    {
+      html: "<div class='yo' style='background: green; padding: 10px;'>Box</div>",
+      x: 100,
+      y: 600,
+      rotation: -50,
+    },
   ],
-  resizable: true,
+  isDrag: true,
+  isResize: true,
+  isRotate: true,
+  isCopy: true,
+  isDelete: true,
+  maxNumberOfItems: 10,
+  throttleDelay: 1,
 }
