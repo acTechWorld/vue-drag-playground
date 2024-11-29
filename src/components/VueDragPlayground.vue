@@ -126,9 +126,9 @@ interface PropsDraggableItem {
   html: string // HTML string to render
   x: number // X-coordinate for position
   y: number // Y-coordinate for position
-  width: number
-  height: number
-  rotation: number
+  width?: number
+  height?: number
+  rotation?: number
 }
 
 interface DraggableItem {
@@ -177,6 +177,8 @@ const refItems: Ref<DraggableItem[]> = ref(
     ?.map((item, idx) => ({
       ...item,
       id: idx,
+      width: item.width ?? 0,
+      height: item.height ?? 0,
       rotation: item.rotation ?? 0,
       initialAngle: 0, //Help for managing rotation
       initialWidth: item.width ?? 0, //Help for managing resize
