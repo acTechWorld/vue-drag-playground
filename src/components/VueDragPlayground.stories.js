@@ -43,6 +43,7 @@ Default.args = {
       rotation: -50,
     },
   ],
+  isDrag: true,
   isResize: true,
   isRotate: true,
   isCopy: true,

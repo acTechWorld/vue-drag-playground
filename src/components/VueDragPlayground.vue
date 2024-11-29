@@ -872,13 +872,26 @@ const stopDrag = () => {
 }
 
 const initItems = () => {
-  refItems.value?.map((item) => {
-    const itemEl = document.querySelector(`.item-${item.id}`)
-    if (itemEl) {
-      item.width = itemEl.clientWidth
-      item.height = itemEl.clientHeight
-    }
-  })
+  const playground = document.querySelector('.vue-drag-playground')
+  if (playground) {
+    const playgroundBounds = playground.getBoundingClientRect()
+    refItems.value?.map((item) => {
+      const itemEl = document.querySelector(`.item-${item.id}`)
+      if (itemEl) {
+        item.width = itemEl.clientWidth
+        item.height = itemEl.clientHeight
+        const { x: calcX, y: calcY } = calculateDragItemNewPos(
+          item,
+          item.x,
+          item.y,
+          playgroundBounds,
+          false,
+        )
+        item.x = calcX
+        item.y = calcY
+      }
+    })
+  }
 }
 
 //LIFECYCLE
@@ -886,6 +899,7 @@ onMounted(() => {
   initItems()
   document.addEventListener('keydown', handleKeyDown)
   document.addEventListener('keyup', handleKeyUp)
+  window.addEventListener('resize', initItems)
 })
 
 // Ensure global event listeners are removed when component is unmounted
@@ -914,7 +928,13 @@ watch(
       if (props.maxNumberOfItems > refItems.value.length) {
         //We increase the list with props items currently not displayed to equal max number
         const propsItemsNotDisplayed = props.items
-          .map((item, idx) => ({ ...item, id: idx }))
+          .map((item, idx) => ({
+            ...item,
+            id: idx,
+            initialAngle: 0,
+            initialWidth: item.width ?? 0,
+            initialHeight: item.height ?? 0,
+          }))
           ?.filter((item) => !refItems.value.map((item) => item.id).includes(item.id))
           ?.slice(0, props.maxNumberOfItems - refItems.value.length)
         refItems.value = [...refItems.value, ...propsItemsNotDisplayed]
@@ -925,7 +945,13 @@ watch(
     } else {
       //Undefined = Max numbers of items => actual items + props items currently not displayed
       const propsItemsNotDisplayed = props.items
-        .map((item, idx) => ({ ...item, id: idx }))
+        .map((item, idx) => ({
+          ...item,
+          id: idx,
+          initialAngle: 0,
+          initialWidth: item.width ?? 0,
+          initialHeight: item.height ?? 0,
+        }))
         ?.filter((item) => !refItems.value.map((item) => item.id).includes(item.id))
       refItems.value = [...refItems.value, ...propsItemsNotDisplayed]
     }
