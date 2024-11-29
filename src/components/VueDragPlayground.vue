@@ -1,5 +1,5 @@
 <template>
-  <div class="vue-drag-playground select-none relative" @click="handleClickPlayground">
+  <div class="vue-drag-playground select-none relative" @mousedown="handleClickPlayground">
     <div
       v-for="(item, index) in refItems"
       :key="index"
@@ -13,7 +13,7 @@
       <div
         v-if="(isCopy || isDelete) && !isCtrl"
         class="z-0 group-hover:z-[2] group-hover:opacity-100 transition-opacity duration-500 group-hover:pointer-events-auto pointer-events-none opacity-0 absolute flex gap-2"
-        :class="{ 'opacity-100': interactId === item.id }"
+        :class="{ 'opacity-100 z-[2]': interactId === item.id }"
         :style="calculateMenuPos(item.id)"
       >
         <svg
@@ -45,6 +45,7 @@
           'cursor-grab': interactId !== item.id && isDrag && !isCtrl,
           'cursor-pointer': isCtrl,
           'border-dashed border-2 border-black': ctrlSelectedItemsId.includes(item.id),
+          'z-[3]': interactId === item.id,
         }"
         class="z-[1] relative group-hover:z-[3]"
         :style="{
@@ -121,7 +122,7 @@
 <script setup lang="ts">
 import { ref, onUnmounted, onMounted, nextTick, watch, type Ref } from 'vue'
 import DOMPurify from 'dompurify'
-interface DraggableItem {
+interface PropsDraggableItem {
   html: string // HTML string to render
   x: number // X-coordinate for position
   y: number // Y-coordinate for position
@@ -130,11 +131,24 @@ interface DraggableItem {
   rotation: number
 }
 
+interface DraggableItem {
+  id: number
+  html: string // HTML string to render
+  x: number // X-coordinate for position
+  y: number // Y-coordinate for position
+  width: number
+  height: number
+  rotation: number
+  initialAngle: number
+  initialWidth: number
+  initialHeight: number
+}
+
 type ResizingHandle = 'top-right' | 'bottom-right' | 'top-left' | 'bottom-left'
 
 const props = withDefaults(
   defineProps<{
-    items?: DraggableItem[]
+    items?: PropsDraggableItem[]
     isDrag?: boolean
     isResize?: boolean
     isRotate?: boolean
@@ -158,13 +172,15 @@ const props = withDefaults(
 )
 
 //COMMON
-const refItems = ref(
+const refItems: Ref<DraggableItem[]> = ref(
   props.items
     ?.map((item, idx) => ({
       ...item,
       id: idx,
       rotation: item.rotation ?? 0,
-      initialAngle: 0,
+      initialAngle: 0, //Help for managing rotation
+      initialWidth: item.width ?? 0, //Help for managing resize
+      initialHeight: item.height ?? 0, //Help for managing resize
     }))
     ?.slice(0, props.maxNumberOfItems),
 )
@@ -186,8 +202,6 @@ const currentDragEl = ref<HTMLElement | null>(null)
 //RESIZE
 const initialMouseX = ref(0)
 const initialMouseY = ref(0)
-const initialWidth = ref(0)
-const initialHeight = ref(0)
 const resizingHandle = ref<ResizingHandle | null>(null)
 
 //ROTATION
@@ -297,14 +311,14 @@ const handleKeyUp = (event: KeyboardEvent) => {
 }
 
 const handleClickPlayground = () => {
-  if (!isCtrl.value) {
+  if (!isCtrl.value && !isRotating.value) {
     ctrlSelectedItemsId.value = []
   }
 }
 
 //COPY
 const copyItem = (id: number) => {
-  if (!props.maxNumberOfItems || props.maxNumberOfItems > refItems.value.length) {
+  if (props.isCopy && (!props.maxNumberOfItems || props.maxNumberOfItems > refItems.value.length)) {
     const playground = document.querySelector('.vue-drag-playground')
     const item = refItems.value.find((item) => item.id === id)
     if (item && playground) {
@@ -342,8 +356,10 @@ const copyItem = (id: number) => {
 
 //DELETE
 const deleteItem = (id: number) => {
-  refItems.value = refItems.value.filter((item) => item.id !== id)
-  interactId.value = null
+  if (props.isDelete) {
+    refItems.value = refItems.value.filter((item) => item.id !== id)
+    interactId.value = null
+  }
 }
 
 //CTRL CLICK
@@ -398,8 +414,18 @@ const startResize = (event: MouseEvent | TouchEvent, id: number, handle: Resizin
       const isTouch = event instanceof TouchEvent
       initialMouseX.value = isTouch ? event.touches[0].clientX : event.clientX
       initialMouseY.value = isTouch ? event.touches[0].clientY : event.clientY
-      initialWidth.value = item.width
-      initialHeight.value = item.height
+      if (ctrlSelectedItemsId.value?.length > 0 && ctrlSelectedItemsId.value.includes(id)) {
+        ctrlSelectedItemsId.value.forEach((localId) => {
+          const ctrlItem = refItems.value.find((refItem) => refItem.id === localId)
+          if (ctrlItem) {
+            ctrlItem.initialWidth = ctrlItem.width
+            ctrlItem.initialHeight = ctrlItem.height
+          }
+        })
+      } else {
+        item.initialWidth = item.width
+        item.initialHeight = item.height
+      }
       document.addEventListener(isTouch ? 'touchmove' : 'mousemove', onResize)
       document.addEventListener(isTouch ? 'touchend' : 'mouseup', stopResize)
     }
@@ -418,6 +444,30 @@ const onResize = throttle((event: MouseEvent | TouchEvent) => {
 
   const playgroundBounds = playground.getBoundingClientRect()
 
+  const isTouch = event instanceof TouchEvent
+  const clientX = isTouch ? event.touches[0].clientX : event.clientX
+  const clientY = isTouch ? event.touches[0].clientY : event.clientY
+
+  const dx = clientX - initialMouseX.value
+  const dy = clientY - initialMouseY.value
+  if (ctrlSelectedItemsId.value?.length > 0 && ctrlSelectedItemsId.value.includes(item.id)) {
+    ctrlSelectedItemsId.value.forEach((localId) => {
+      const ctrlItem = refItems.value.find((refItem) => refItem.id === localId)
+      if (ctrlItem) {
+        updateResizeItem(ctrlItem, dx, dy, playgroundBounds)
+      }
+    })
+  } else {
+    updateResizeItem(item, dx, dy, playgroundBounds)
+  }
+}, props.throttleDelay)
+
+const updateResizeItem = (
+  item: DraggableItem,
+  dx: number,
+  dy: number,
+  playgroundBounds: DOMRect,
+) => {
   // Calculate rotation
   const rotation = ((item.rotation ?? 0) * Math.PI) / 180
   const cos = Math.cos(rotation)
@@ -438,14 +488,8 @@ const onResize = throttle((event: MouseEvent | TouchEvent) => {
     x: centerX + corner.x * cos - corner.y * sin,
     y: centerY + corner.x * sin + corner.y * cos,
   }))
-
-  const isTouch = event instanceof TouchEvent
-  const clientX = isTouch ? event.touches[0].clientX : event.clientX
-  const clientY = isTouch ? event.touches[0].clientY : event.clientY
-
   // Calculate deltas in rotated space
-  const dx = clientX - initialMouseX.value
-  const dy = clientY - initialMouseY.value
+
   const rotatedDx = dx * cos + dy * sin
   const rotatedDy = dy * cos - dx * sin
   let newWidth = item.width
@@ -455,13 +499,14 @@ const onResize = throttle((event: MouseEvent | TouchEvent) => {
 
   // Determine the fixed corner and calculate new center
   let fixedCorner // This will hold the position of the fixed corner
-  let newCenterX, newCenterY
+  let newCenterX: number = 0,
+    newCenterY: number = 0
 
   switch (resizingHandle.value) {
     case 'bottom-right': {
       fixedCorner = corners[0] // Top-left
-      newWidth = clamp(initialWidth.value + rotatedDx, 10, playgroundBounds.width)
-      newHeight = clamp(initialHeight.value + rotatedDy, 10, playgroundBounds.height)
+      newWidth = clamp(item.initialWidth + rotatedDx, 10, playgroundBounds.width)
+      newHeight = clamp(item.initialHeight + rotatedDy, 10, playgroundBounds.height)
 
       // Calculate the new center based on the fixed corner
       newCenterX = fixedCorner.x + (newWidth * cos) / 2 - (newHeight * sin) / 2
@@ -470,8 +515,8 @@ const onResize = throttle((event: MouseEvent | TouchEvent) => {
     }
     case 'bottom-left': {
       fixedCorner = corners[1] // Top-right
-      newWidth = clamp(initialWidth.value - rotatedDx, 10, playgroundBounds.width)
-      newHeight = clamp(initialHeight.value + rotatedDy, 10, playgroundBounds.height)
+      newWidth = clamp(item.initialWidth - rotatedDx, 10, playgroundBounds.width)
+      newHeight = clamp(item.initialHeight + rotatedDy, 10, playgroundBounds.height)
 
       // Calculate the new center based on the fixed corner
       newCenterX = fixedCorner.x - (newWidth * cos) / 2 - (newHeight * sin) / 2
@@ -480,8 +525,8 @@ const onResize = throttle((event: MouseEvent | TouchEvent) => {
     }
     case 'top-right': {
       fixedCorner = corners[3] // Bottom-left
-      newWidth = clamp(initialWidth.value + rotatedDx, 10, playgroundBounds.width)
-      newHeight = clamp(initialHeight.value - rotatedDy, 10, playgroundBounds.height)
+      newWidth = clamp(item.initialWidth + rotatedDx, 10, playgroundBounds.width)
+      newHeight = clamp(item.initialHeight - rotatedDy, 10, playgroundBounds.height)
 
       // Calculate the new center based on the fixed corner
       newCenterX = fixedCorner.x + (newWidth * cos) / 2 + (newHeight * sin) / 2
@@ -490,8 +535,8 @@ const onResize = throttle((event: MouseEvent | TouchEvent) => {
     }
     case 'top-left': {
       fixedCorner = corners[2] // Bottom-right
-      newWidth = clamp(initialWidth.value - rotatedDx, 10, playgroundBounds.width)
-      newHeight = clamp(initialHeight.value - rotatedDy, 10, playgroundBounds.height)
+      newWidth = clamp(item.initialWidth - rotatedDx, 10, playgroundBounds.width)
+      newHeight = clamp(item.initialHeight - rotatedDy, 10, playgroundBounds.height)
 
       // Calculate the new center based on the fixed corner
       newCenterX = fixedCorner.x - (newWidth * cos) / 2 + (newHeight * sin) / 2
@@ -546,7 +591,7 @@ const onResize = throttle((event: MouseEvent | TouchEvent) => {
   item.y = newY
 
   emit('resizing', item)
-}, props.throttleDelay)
+}
 
 const stopResize = () => {
   const item = refItems.value.find((item) => item.id === interactId.value)
@@ -577,7 +622,7 @@ const startRotate = (event: MouseEvent | TouchEvent, id: number) => {
       const dx = initialMouseX.value - centerX.value
       const dy = initialMouseY.value - centerY.value
 
-      if (ctrlSelectedItemsId.value?.length > 0) {
+      if (ctrlSelectedItemsId.value?.length > 0 && ctrlSelectedItemsId.value.includes(id)) {
         ctrlSelectedItemsId.value.forEach((localId) => {
           const ctrlItem = refItems.value.find((refItem) => refItem.id === localId)
           if (ctrlItem) {
@@ -598,6 +643,7 @@ const startRotate = (event: MouseEvent | TouchEvent, id: number) => {
 
 const onRotate = throttle((event: MouseEvent | TouchEvent) => {
   event.stopPropagation()
+
   const playground = document.querySelector('.vue-drag-playground')
   const item = refItems.value.find((item) => item.id === interactId.value)
 
@@ -612,7 +658,7 @@ const onRotate = throttle((event: MouseEvent | TouchEvent) => {
   const dy = clientY - centerY.value
   const angle = Math.atan2(dy, dx) * (180 / Math.PI)
   const rotation = angle - item.initialAngle
-  if (ctrlSelectedItemsId.value?.length > 0) {
+  if (ctrlSelectedItemsId.value?.length > 0 && ctrlSelectedItemsId.value.includes(item.id)) {
     ctrlSelectedItemsId.value.forEach((localId) => {
       const ctrlItem = refItems.value.find((refItem) => refItem.id === localId)
       if (ctrlItem) {
@@ -705,7 +751,7 @@ const onDrag = throttle((event: MouseEvent | TouchEvent) => {
 
   const newX = clientX - offsetX.value
   const newY = clientY - offsetY.value
-  if (ctrlSelectedItemsId.value?.length > 0) {
+  if (ctrlSelectedItemsId.value?.length > 0 && ctrlSelectedItemsId.value.includes(item.id)) {
     const newPosCtrlItems: { [key: number]: { calcX: number; calcY: number } } = {}
     ctrlSelectedItemsId.value.forEach((localId) => {
       const ctrlItem = refItems.value.find((refItem) => refItem.id === localId)
