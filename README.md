@@ -1,6 +1,41 @@
-# Vue Draggable, Resizable, and Rotatable Component
+# VueDragPlayground
 
-This Vue component provides drag, resize, and rotate functionality for items. You can configure the behavior of each item and listen for various events.
+**VueDragPlayground** is a powerful and flexible Vue component library that enables drag, resize, and rotate functionality for elements on the page. It allows you to easily create interactive, draggable, resizable, and rotatable items within a Vue application. With customizable properties and event handling, VueDragPlayground makes it simple to build dynamic user interfaces where users can manipulate items through intuitive gestures.
+
+VueDragPlayground is highly configurable and can be integrated seamlessly into any Vue project.
+
+## Features
+
+- **Drag**: Items can be moved around the screen.
+- **Resize**: Items can be resized via drag handles.
+- **Rotate**: Items can be rotated freely.
+- **Copy and Delete**: Items can be duplicated or removed dynamically.
+- **Event Handling**: Emit events for drag, resize, and rotate actions.
+
+## Table of Contents
+
+- [Props](#props)
+  - [items](#items)
+  - [isDrag](#isdrag)
+  - [isResize](#isresize)
+  - [isRotate](#isrotate)
+  - [isCopy](#iscopy)
+  - [isDelete](#isdelete)
+  - [throttleDelay](#throttledelay)
+  - [maxNumberOfItems](#maxnumberofitems)
+  - [multiRotationMode](#multirotationmode)
+- [Emits](#emits)
+  - [drag-start](#drag-start)
+  - [dragging](#dragging)
+  - [drag-end](#drag-end)
+  - [resize-start](#resize-start)
+  - [resizing](#resizing)
+  - [resize-end](#resize-end)
+  - [rotation-start](#rotation-start)
+  - [rotating](#rotating)
+  - [rotation-end](#rotation-end)
+- [Example Usage](#example-usage)
+- [License](#license)
 
 ## Props
 
@@ -223,3 +258,8 @@ const handleRotationEnd = (event) => {
 }
 </script>
 ```
+
+## License
+
+This version removes the redundant section and adds the MIT license at the end of the
+README. You can now distribute this in your project or use it as needed!
