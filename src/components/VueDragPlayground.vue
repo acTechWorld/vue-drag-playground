@@ -50,7 +50,7 @@
         :style="{
           transform: `rotate(${item.rotation}deg) translate3d(0, 0, 0)`,
         }"
-        @click="handleClickItem(item.id)"
+        @click.stop="handleClickItem(item.id)"
         @mousedown.stop="startDrag($event, item.id)"
         @touchstart.stop="startDrag($event, item.id)"
       >
@@ -102,7 +102,8 @@
             viewBox="0 0 512 512"
             class="w-6 h-6 p-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none absolute bg-black rounded-[50%] cursor-pointer top-2 left-1/2 transform -translate-x-1/2"
             :class="[
-              interactId === item.id ? 'hover:fill-green-500 opacity-100 fill-white' : 'fill-white',
+              { 'opacity-100': interactId === item.id },
+              interactId === item.id && isRotating ? 'fill-green-500' : 'fill-white',
             ]"
             @mousedown.stop="startRotate($event, item.id)"
             @touchstart.stop="startRotate($event, item.id)"
@@ -141,6 +142,7 @@ const props = withDefaults(
     isDelete?: boolean
     throttleDelay?: number
     maxNumberOfItems?: number | undefined
+    multiRotationMode?: 'proportional' | 'uniform' // "proportional" multirotation keep the based angle of item / "proportional" multirotation align items at the same angle"
   }>(),
   {
     items: () => [],
@@ -151,14 +153,26 @@ const props = withDefaults(
     isDelete: false,
     throttleDelay: 1,
     maxNumberOfItems: undefined,
+    multiRotationMode: 'proportional',
   },
 )
 
 //COMMON
 const refItems = ref(
-  props.items?.map((item, idx) => ({ ...item, id: idx }))?.slice(0, props.maxNumberOfItems),
+  props.items
+    ?.map((item, idx) => ({
+      ...item,
+      id: idx,
+      rotation: item.rotation ?? 0,
+      initialAngle: 0,
+    }))
+    ?.slice(0, props.maxNumberOfItems),
 )
 const ctrlSelectedItemsId: Ref<number[]> = ref([])
+const blockingCtrlInteractionX = ref(false)
+const firstBlockingCtrlInteractionXDone = ref(false)
+const blockingCtrlInteractionY = ref(false)
+const firstBlockingCtrlInteractionYDone = ref(false)
 const maxIdUsed = ref(props.items?.length - 1)
 const interactId = ref<number | null>(null)
 const isCtrl = ref(false)
@@ -177,9 +191,9 @@ const initialHeight = ref(0)
 const resizingHandle = ref<ResizingHandle | null>(null)
 
 //ROTATION
-const initialAngle = ref(0)
 const centerX = ref(0)
 const centerY = ref(0)
+const isRotating = ref(false)
 
 const emit = defineEmits([
   'drag-start',
@@ -277,7 +291,6 @@ const handleKeyDown = (event: KeyboardEvent) => {
 }
 
 const handleKeyUp = (event: KeyboardEvent) => {
-  console.log(event)
   if (event.key === 'Control' || event.key === 'Meta') {
     isCtrl.value = false
   }
@@ -552,7 +565,7 @@ const startRotate = (event: MouseEvent | TouchEvent, id: number) => {
     const itemEl = document.querySelector(`.item-${id}`)
     if (itemEl && item) {
       interactId.value = id
-
+      isRotating.value = true
       // Calculate the center of the element
       const bounds = (itemEl as HTMLElement).getBoundingClientRect()
       centerX.value = bounds.left + bounds.width / 2
@@ -564,7 +577,16 @@ const startRotate = (event: MouseEvent | TouchEvent, id: number) => {
       const dx = initialMouseX.value - centerX.value
       const dy = initialMouseY.value - centerY.value
 
-      initialAngle.value = Math.atan2(dy, dx) * (180 / Math.PI) - (item.rotation ?? 0)
+      if (ctrlSelectedItemsId.value?.length > 0) {
+        ctrlSelectedItemsId.value.forEach((localId) => {
+          const ctrlItem = refItems.value.find((refItem) => refItem.id === localId)
+          if (ctrlItem) {
+            ctrlItem.initialAngle = Math.atan2(dy, dx) * (180 / Math.PI) - (ctrlItem.rotation ?? 0)
+          }
+        })
+      } else {
+        item.initialAngle = Math.atan2(dy, dx) * (180 / Math.PI) - (item.rotation ?? 0)
+      }
 
       // Add global listeners for rotation
       document.addEventListener(isTouch ? 'touchmove' : 'mousemove', onRotate)
@@ -589,8 +611,22 @@ const onRotate = throttle((event: MouseEvent | TouchEvent) => {
   const dx = clientX - centerX.value
   const dy = clientY - centerY.value
   const angle = Math.atan2(dy, dx) * (180 / Math.PI)
+  const rotation = angle - item.initialAngle
+  if (ctrlSelectedItemsId.value?.length > 0) {
+    ctrlSelectedItemsId.value.forEach((localId) => {
+      const ctrlItem = refItems.value.find((refItem) => refItem.id === localId)
+      if (ctrlItem) {
+        const ctrlItemRotation =
+          props.multiRotationMode === 'uniform' ? rotation : angle - ctrlItem.initialAngle
+        updateRotationItem(ctrlItem, ctrlItemRotation, playgroundBounds)
+      }
+    })
+  } else {
+    updateRotationItem(item, rotation, playgroundBounds)
+  }
+}, props.throttleDelay)
 
-  const rotation = angle - initialAngle.value
+const updateRotationItem = (item: DraggableItem, rotation: number, playgroundBounds: DOMRect) => {
   const newRotation = ((rotation ?? 0) * Math.PI) / 180
   const cos = Math.cos(newRotation)
   const sin = Math.sin(newRotation)
@@ -619,12 +655,13 @@ const onRotate = throttle((event: MouseEvent | TouchEvent) => {
   // Update the item's rotation
   item.rotation = rotation
   emit('rotating', item)
-}, props.throttleDelay)
+}
 
 const stopRotate = () => {
   const item = refItems.value.find((item) => item.id === interactId.value)
   emit('rotation-end', item)
   interactId.value = null
+  isRotating.value = false
 
   // Remove global listeners
   document.removeEventListener('mousemove', onRotate)
@@ -668,7 +705,68 @@ const onDrag = throttle((event: MouseEvent | TouchEvent) => {
 
   const newX = clientX - offsetX.value
   const newY = clientY - offsetY.value
+  if (ctrlSelectedItemsId.value?.length > 0) {
+    const newPosCtrlItems: { [key: number]: { calcX: number; calcY: number } } = {}
+    ctrlSelectedItemsId.value.forEach((localId) => {
+      const ctrlItem = refItems.value.find((refItem) => refItem.id === localId)
+      if (ctrlItem) {
+        const { x: calcX, y: calcY } = calculateDragItemNewPos(
+          ctrlItem,
+          ctrlItem.x + newX - item.x,
+          ctrlItem.y + newY - item.y,
+          playgroundBounds,
+          true,
+        )
+        newPosCtrlItems[ctrlItem.id] = { calcX, calcY }
+      }
+    })
+    if (blockingCtrlInteractionX.value || blockingCtrlInteractionY.value) {
+      ctrlSelectedItemsId.value.forEach((localId) => {
+        const ctrlItem = refItems.value.find((refItem) => refItem.id === localId)
+        if (ctrlItem) {
+          ctrlItem.x =
+            blockingCtrlInteractionX.value && firstBlockingCtrlInteractionXDone.value
+              ? ctrlItem.x
+              : newPosCtrlItems[ctrlItem.id].calcX
+          ctrlItem.y =
+            blockingCtrlInteractionY.value && firstBlockingCtrlInteractionYDone.value
+              ? ctrlItem.y
+              : newPosCtrlItems[ctrlItem.id].calcY
+        }
+        firstBlockingCtrlInteractionXDone.value = blockingCtrlInteractionX.value
+        firstBlockingCtrlInteractionYDone.value = blockingCtrlInteractionY.value
+      })
+    } else {
+      ctrlSelectedItemsId.value.forEach((localId) => {
+        const ctrlItem = refItems.value.find((refItem) => refItem.id === localId)
+        if (ctrlItem) {
+          ctrlItem.x = newPosCtrlItems[ctrlItem.id].calcX
+          ctrlItem.y = newPosCtrlItems[ctrlItem.id].calcY
+        }
+      })
+    }
+    blockingCtrlInteractionX.value = false
+    blockingCtrlInteractionY.value = false
+  } else {
+    const { x: calcX, y: calcY } = calculateDragItemNewPos(
+      item,
+      newX,
+      newY,
+      playgroundBounds,
+      false,
+    )
+    item.x = calcX
+    item.y = calcY
+  }
+}, props.throttleDelay)
 
+const calculateDragItemNewPos = (
+  item: DraggableItem,
+  newX: number,
+  newY: number,
+  playgroundBounds: DOMRect,
+  isMultipleDrag: boolean,
+) => {
   const rotation = ((item.rotation ?? 0) * Math.PI) / 180
   const halfWidth = item.width / 2
   const halfHeight = item.height / 2
@@ -688,17 +786,34 @@ const onDrag = throttle((event: MouseEvent | TouchEvent) => {
   const maxX = Math.max(...corners.map((corner) => corner.x))
   const maxY = Math.max(...corners.map((corner) => corner.y))
 
-  // Update the item's position with clamping
-  item.x = Math.max(
-    0 - halfWidth + maxX,
-    Math.min(newX, playgroundBounds.width - (halfWidth + maxX)),
-  )
-  item.y = Math.max(
-    0 - halfHeight + maxY,
-    Math.min(newY, playgroundBounds.height - (halfHeight + maxY)),
-  )
-}, props.throttleDelay)
+  let x, y
 
+  if (newX < 0 - halfWidth + maxX) {
+    x = 0 - halfWidth + maxX
+    blockingCtrlInteractionX.value = isMultipleDrag
+  } else if (newX > playgroundBounds.width - (halfWidth + maxX)) {
+    x = playgroundBounds.width - (halfWidth + maxX)
+    blockingCtrlInteractionX.value = isMultipleDrag
+  } else {
+    x = newX
+  }
+
+  // For y coordinate
+  if (newY < 0 - halfHeight + maxY) {
+    y = 0 - halfHeight + maxY
+    blockingCtrlInteractionY.value = isMultipleDrag
+  } else if (newY > playgroundBounds.height - (halfHeight + maxY)) {
+    y = playgroundBounds.height - (halfHeight + maxY)
+    blockingCtrlInteractionY.value = isMultipleDrag
+  } else {
+    y = newY
+  }
+  // Update the item's position with clamping
+  return {
+    x,
+    y,
+  }
+}
 const stopDrag = () => {
   const item = refItems.value.find((item) => item.id === interactId.value)
   emit('drag-end', item)
@@ -716,7 +831,6 @@ const initItems = () => {
     if (itemEl) {
       item.width = itemEl.clientWidth
       item.height = itemEl.clientHeight
-      item.rotation = item.rotation ?? 0
     }
   })
 }
