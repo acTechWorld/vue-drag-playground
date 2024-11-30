@@ -933,6 +933,9 @@ watch(
           .map((item, idx) => ({
             ...item,
             id: idx,
+            width: item.width ?? 0,
+            height: item.height ?? 0,
+            rotation: item.rotation ?? 0,
             initialAngle: 0,
             initialWidth: item.width ?? 0,
             initialHeight: item.height ?? 0,
@@ -950,6 +953,9 @@ watch(
         .map((item, idx) => ({
           ...item,
           id: idx,
+          width: item.width ?? 0,
+          height: item.height ?? 0,
+          rotation: item.rotation ?? 0,
           initialAngle: 0,
           initialWidth: item.width ?? 0,
           initialHeight: item.height ?? 0,
