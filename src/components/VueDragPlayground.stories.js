@@ -11,31 +11,28 @@ const DefaultTemplate = (args) => ({
   setup() {
     const refItems = ref(args.items)
     const handleDragStart = (item) => {
-      if (item.name === 'astronaut') {
-        refItems.value = refItems.value.map((it) =>
-          it.name === item.name
-            ? {
-                ...item,
-                html: item.html.replace(
-                  /(<img[^>]*src=')[^']*(')/i,
-                  `$1${item.name}_dragging.gif$2`,
-                ),
-              }
-            : it,
-        )
-      }
+      refItems.value = refItems.value.map((it) =>
+        it.name === item.name
+          ? {
+              ...item,
+              html: ['astronaut', 'alien'].includes(item.name)
+                ? item.html.replace(/(<img[^>]*src=')[^']*(')/i, `$1${item.name}_dragging.gif$2`)
+                : item.html,
+            }
+          : it,
+      )
     }
     const handleDragEnd = (item) => {
-      if (item.name === 'astronaut') {
-        refItems.value = refItems.value.map((it) =>
-          it.name === item.name
-            ? {
-                ...item,
-                html: item.html.replace(/(<img[^>]*src=')[^']*(')/i, `$1${item.name}.gif$2`),
-              }
-            : it,
-        )
-      }
+      refItems.value = refItems.value.map((it) =>
+        it.name === item.name
+          ? {
+              ...item,
+              html: ['astronaut', 'alien'].includes(item.name)
+                ? item.html.replace(/(<img[^>]*src=')[^']*(')/i, `$1${item.name}.gif$2`)
+                : item.html,
+            }
+          : it,
+      )
     }
     return { args, refItems, handleDragStart, handleDragEnd }
   },
@@ -51,17 +48,20 @@ export const Default = DefaultTemplate.bind({})
 Default.args = {
   items: [
     {
+      name: 'block1',
       html: "<h1 style='background: blue; width: 100px'>Heading</h1>",
       x: 50,
       y: 50,
       rotation: 50,
     },
     {
+      name: 'block2',
       html: "<div class='yo' style='background: yellow; padding: 10px;'>Box</div>",
       x: 350,
       y: 300,
     },
     {
+      name: 'block3',
       html: "<div class='yo' style='background: green; padding: 10px;'>Box</div>",
       x: 100,
       y: 600,
@@ -92,8 +92,8 @@ Default.args = {
       height: 300,
     },
     {
-      name: 'soucoupe',
-      html: "<img src='soucoupe.svg' width='100px' draggable='false'>",
+      name: 'alien',
+      html: "<img src='alien.gif' width='100px' draggable='false'>",
       x: 150,
       y: 150,
       width: 100,
