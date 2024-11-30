@@ -11,34 +11,34 @@ const DefaultTemplate = (args) => ({
   setup() {
     const refItems = ref(args.items)
     const handleDragStart = (item) => {
-      refItems.value = refItems.value.map((it) =>
-        it.name === item.name
-          ? {
-              ...item,
-              html: ['astronaut', 'alien'].includes(item.name)
-                ? item.html.replace(/(<img[^>]*src=')[^']*(')/i, `$1${item.name}_dragging.gif$2`)
-                : item.html,
-            }
-          : it,
-      )
+      // refItems.value = refItems.value.map((it) =>
+      //   it.name === item.name
+      //     ? {
+      //         ...item,
+      //         html: ['astronaut', 'alien'].includes(item.name)
+      //           ? item.html.replace(/(<img[^>]*src=')[^']*(')/i, `$1${item.name}_dragging.gif$2`)
+      //           : item.html,
+      //       }
+      //     : it,
+      // )
     }
     const handleDragEnd = (item) => {
-      refItems.value = refItems.value.map((it) =>
-        it.name === item.name
-          ? {
-              ...item,
-              html: ['astronaut', 'alien'].includes(item.name)
-                ? item.html.replace(/(<img[^>]*src=')[^']*(')/i, `$1${item.name}.gif$2`)
-                : item.html,
-            }
-          : it,
-      )
+      // refItems.value = refItems.value.map((it) =>
+      //   it.name === item.name
+      //     ? {
+      //         ...item,
+      //         html: ['astronaut', 'alien'].includes(item.name)
+      //           ? item.html.replace(/(<img[^>]*src=')[^']*(')/i, `$1${item.name}.gif$2`)
+      //           : item.html,
+      //       }
+      //     : it,
+      // )
     }
     return { args, refItems, handleDragStart, handleDragEnd }
   },
   template: `
     <div>      
-      <VueDragPlayground @drag-start="handleDragStart" @drag-end="handleDragEnd" v-bind="args" :items="refItems" class="w-full h-screen rounded-lg outline-black outline-2 outline bg-blue-200"/>
+      <VueDragPlayground @drag-start="handleDragStart" @drag-end="handleDragEnd" v-bind="args" v-model="refItems" class="w-full h-screen rounded-lg outline-black outline-2 outline bg-blue-200"/>
     </div>
   `,
 })
