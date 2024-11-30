@@ -11,28 +11,28 @@ const DefaultTemplate = (args) => ({
   setup() {
     const refItems = ref(args.items)
     const handleDragStart = (item) => {
-      // refItems.value = refItems.value.map((it) =>
-      //   it.name === item.name
-      //     ? {
-      //         ...item,
-      //         html: ['astronaut', 'alien'].includes(item.name)
-      //           ? item.html.replace(/(<img[^>]*src=')[^']*(')/i, `$1${item.name}_dragging.gif$2`)
-      //           : item.html,
-      //       }
-      //     : it,
-      // )
+      refItems.value = refItems.value.map((it) =>
+        it.name === item.name && it.id === item.id
+          ? {
+              ...item,
+              html: ['astronaut', 'alien'].includes(item.name)
+                ? item.html.replace(/(<img[^>]*src=')[^']*(')/i, `$1${item.name}_dragging.gif$2`)
+                : item.html,
+            }
+          : it,
+      )
     }
     const handleDragEnd = (item) => {
-      // refItems.value = refItems.value.map((it) =>
-      //   it.name === item.name
-      //     ? {
-      //         ...item,
-      //         html: ['astronaut', 'alien'].includes(item.name)
-      //           ? item.html.replace(/(<img[^>]*src=')[^']*(')/i, `$1${item.name}.gif$2`)
-      //           : item.html,
-      //       }
-      //     : it,
-      // )
+      refItems.value = refItems.value.map((it) =>
+        it.name === item.name && it.id === item.id
+          ? {
+              ...item,
+              html: ['astronaut', 'alien'].includes(item.name)
+                ? item.html.replace(/(<img[^>]*src=')[^']*(')/i, `$1${item.name}.gif$2`)
+                : item.html,
+            }
+          : it,
+      )
     }
     return { args, refItems, handleDragStart, handleDragEnd }
   },
@@ -94,8 +94,8 @@ Default.args = {
     {
       name: 'alien',
       html: "<img src='alien.gif' width='100px' draggable='false'>",
-      x: 150,
-      y: 150,
+      x: 1050,
+      y: 120,
       width: 100,
       height: 100,
     },
@@ -115,6 +115,15 @@ Default.args = {
       width: 200,
       height: 200,
       rotation: 50,
+    },
+    {
+      name: 'astronaut',
+      html: "<img src='astronaut.gif' width='200px' draggable='false'>",
+      x: 1200,
+      y: 400,
+      width: 300,
+      height: 300,
+      rotation: -50,
     },
   ],
   isDrag: true,
