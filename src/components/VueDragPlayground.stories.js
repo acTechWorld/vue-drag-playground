@@ -4,17 +4,44 @@ export default {
 
   component: VueDragPlayground,
 }
+import { ref } from 'vue'
 
 const DefaultTemplate = (args) => ({
   components: { VueDragPlayground },
-
   setup() {
-    return { args }
+    const refItems = ref(args.items)
+    const handleDragStart = (item) => {
+      if (item.name === 'astronaut') {
+        refItems.value = refItems.value.map((it) =>
+          it.name === item.name
+            ? {
+                ...item,
+                html: item.html.replace(
+                  /(<img[^>]*src=')[^']*(')/i,
+                  `$1${item.name}_dragging.gif$2`,
+                ),
+              }
+            : it,
+        )
+      }
+    }
+    const handleDragEnd = (item) => {
+      if (item.name === 'astronaut') {
+        refItems.value = refItems.value.map((it) =>
+          it.name === item.name
+            ? {
+                ...item,
+                html: item.html.replace(/(<img[^>]*src=')[^']*(')/i, `$1${item.name}.gif$2`),
+              }
+            : it,
+        )
+      }
+    }
+    return { args, refItems, handleDragStart, handleDragEnd }
   },
-
   template: `
     <div>      
-      <VueDragPlayground v-bind="args" class="w-full h-screen rounded-lg outline-black outline-2 outline bg-blue-200"/>
+      <VueDragPlayground @drag-start="handleDragStart" @drag-end="handleDragEnd" v-bind="args" :items="refItems" class="w-full h-screen rounded-lg outline-black outline-2 outline bg-blue-200"/>
     </div>
   `,
 })

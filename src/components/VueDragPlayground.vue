@@ -888,7 +888,6 @@ const initItems = () => {
       if (itemEl && bounds) {
         item.width = item.width ? item.width : bounds.width
         item.height = item.height ? item.height : bounds.height
-        console.log(item.width, item.height)
 
         const { x: calcX, y: calcY } = calculateDragItemNewPos(
           item,
@@ -970,6 +969,27 @@ watch(
         ?.filter((item) => !refItems.value.map((item) => item.id).includes(item.id))
       refItems.value = [...refItems.value, ...propsItemsNotDisplayed]
     }
+    nextTick(() => {
+      initItems()
+    })
+  },
+)
+
+watch(
+  () => props.items,
+  () => {
+    refItems.value = props.items
+      ?.map((item, idx) => ({
+        ...item,
+        id: idx,
+        width: item.width ?? 0,
+        height: item.height ?? 0,
+        rotation: item.rotation ?? 0,
+        initialAngle: 0, //Help for managing rotation
+        initialWidth: item.width ?? 0, //Help for managing resize
+        initialHeight: item.height ?? 0, //Help for managing resize
+      }))
+      ?.slice(0, props.maxNumberOfItems)
     nextTick(() => {
       initItems()
     })
