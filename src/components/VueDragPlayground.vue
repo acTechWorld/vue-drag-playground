@@ -1,5 +1,8 @@
 <template>
-  <div class="vue-drag-playground select-none relative" @mousedown="handleClickPlayground">
+  <div
+    class="vue-drag-playground select-none relative w-full h-full"
+    @mousedown="handleClickPlayground"
+  >
     <div
       v-for="(item, index) in refItems"
       :key="index"
@@ -123,6 +126,7 @@
 import { ref, onUnmounted, onMounted, nextTick, watch, type Ref } from 'vue'
 import DOMPurify from 'dompurify'
 interface PropsDraggableItem {
+  name?: string
   html: string // HTML string to render
   x: number // X-coordinate for position
   y: number // Y-coordinate for position
@@ -133,6 +137,7 @@ interface PropsDraggableItem {
 
 interface DraggableItem {
   id: number
+  name?: string
   html: string // HTML string to render
   x: number // X-coordinate for position
   y: number // Y-coordinate for position
@@ -879,9 +884,12 @@ const initItems = () => {
     const playgroundBounds = playground.getBoundingClientRect()
     refItems.value?.map((item) => {
       const itemEl = document.querySelector(`.item-${item.id}`)
-      if (itemEl) {
-        item.width = itemEl.clientWidth
-        item.height = itemEl.clientHeight
+      const bounds = itemEl?.getBoundingClientRect()
+      if (itemEl && bounds) {
+        item.width = item.width ? item.width : bounds.width
+        item.height = item.height ? item.height : bounds.height
+        console.log(item.width, item.height)
+
         const { x: calcX, y: calcY } = calculateDragItemNewPos(
           item,
           item.x,
@@ -898,12 +906,11 @@ const initItems = () => {
 
 //LIFECYCLE
 onMounted(() => {
-  initItems()
+  nextTick(() => initItems())
   document.addEventListener('keydown', handleKeyDown)
   document.addEventListener('keyup', handleKeyUp)
   window.addEventListener('resize', initItems)
 })
-
 // Ensure global event listeners are removed when component is unmounted
 onUnmounted(() => {
   document.removeEventListener('keydown', handleKeyDown)
