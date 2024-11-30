@@ -128,7 +128,6 @@ import {
   onUnmounted,
   onMounted,
   nextTick,
-  watch,
   type Ref,
   reactive,
   type Reactive,
@@ -443,7 +442,7 @@ const startResize = (event: MouseEvent | TouchEvent, id: number, handle: Resizin
   if (props.isResize && !isCtrl.value) {
     const item = items.value.find((item) => item.id === id)
     const itemEl = document.querySelector(`.item-${id}`)
-    if (itemEl && item && item.id) {
+    if (itemEl && item && item.id !== undefined) {
       emit('resize-start', item, handle)
       interactId.value = id
       resizingHandle.value = handle
@@ -488,7 +487,7 @@ const onResize = throttle((event: MouseEvent | TouchEvent) => {
   const dy = clientY - initialMouseY.value
   if (
     ctrlSelectedItemsId.value?.length > 0 &&
-    item.id &&
+    item.id !== undefined &&
     ctrlSelectedItemsId.value.includes(item.id)
   ) {
     ctrlSelectedItemsId.value.forEach((localId) => {
@@ -543,7 +542,7 @@ const updateResizeItem = (
   let fixedCorner // This will hold the position of the fixed corner
   let newCenterX: number = 0,
     newCenterY: number = 0
-  if (item.id) {
+  if (item.id !== undefined) {
     const initialValuesItem = initialValues[item.id]
     switch (resizingHandle.value) {
       case 'bottom-right': {
@@ -652,7 +651,7 @@ const startRotate = (event: MouseEvent | TouchEvent, id: number) => {
   if (props.isRotate && !isCtrl.value) {
     const item = items.value.find((item) => item.id === id)
     const itemEl = document.querySelector(`.item-${id}`)
-    if (itemEl && item && item.id) {
+    if (itemEl && item && item.id !== undefined) {
       interactId.value = id
       isRotating.value = true
       // Calculate the center of the element
@@ -669,7 +668,7 @@ const startRotate = (event: MouseEvent | TouchEvent, id: number) => {
       if (ctrlSelectedItemsId.value?.length > 0 && ctrlSelectedItemsId.value.includes(id)) {
         ctrlSelectedItemsId.value.forEach((localId) => {
           const ctrlItem = items.value.find((refItem) => refItem.id === localId)
-          if (ctrlItem && ctrlItem.id) {
+          if (ctrlItem && ctrlItem.id !== undefined) {
             const initialValuesItem = initialValues[ctrlItem.id]
             initialValuesItem.initialAngle =
               Math.atan2(dy, dx) * (180 / Math.PI) - (ctrlItem.rotation ?? 0)
@@ -694,7 +693,7 @@ const onRotate = throttle((event: MouseEvent | TouchEvent) => {
   const playground = document.querySelector('.vue-drag-playground')
   const item = items.value.find((item) => item.id === interactId.value)
 
-  if (!playground || !item || !item.id || interactId.value === null) return
+  if (!playground || !item || item.id === undefined || interactId.value === null) return
   const playgroundBounds = playground.getBoundingClientRect()
 
   const isTouch = event instanceof TouchEvent
@@ -708,12 +707,12 @@ const onRotate = throttle((event: MouseEvent | TouchEvent) => {
   const rotation = angle - initialValuesItem.initialAngle
   if (
     ctrlSelectedItemsId.value?.length > 0 &&
-    item.id &&
+    item.id !== undefined &&
     ctrlSelectedItemsId.value.includes(item.id)
   ) {
     ctrlSelectedItemsId.value.forEach((localId) => {
       const ctrlItem = items.value.find((refItem) => refItem.id === localId)
-      if (ctrlItem && ctrlItem.id) {
+      if (ctrlItem && ctrlItem.id !== undefined) {
         const initialValuesItem = initialValues[ctrlItem.id]
         const ctrlItemRotation =
           props.multiRotationMode === 'uniform' ? rotation : angle - initialValuesItem.initialAngle
@@ -806,13 +805,13 @@ const onDrag = throttle((event: MouseEvent | TouchEvent) => {
   const newY = clientY - offsetY.value
   if (
     ctrlSelectedItemsId.value?.length > 0 &&
-    item.id &&
+    item.id !== undefined &&
     ctrlSelectedItemsId.value.includes(item.id)
   ) {
     const newPosCtrlItems: { [key: number]: { calcX: number; calcY: number } } = {}
     ctrlSelectedItemsId.value.forEach((localId) => {
       const ctrlItem = items.value.find((refItem) => refItem.id === localId)
-      if (ctrlItem && ctrlItem.id) {
+      if (ctrlItem && ctrlItem.id !== undefined) {
         const { x: calcX, y: calcY } = calculateDragItemNewPos(
           ctrlItem,
           ctrlItem.x + newX - item.x,
@@ -834,7 +833,7 @@ const onDrag = throttle((event: MouseEvent | TouchEvent) => {
         : 0
       ctrlSelectedItemsId.value.forEach((localId) => {
         const ctrlItem = items.value.find((refItem) => refItem.id === localId)
-        if (ctrlItem && ctrlItem.id) {
+        if (ctrlItem && ctrlItem.id !== undefined) {
           ctrlItem.x =
             blockingCtrlInteractionX.value &&
             firstBlockingCtrlInteractionXDone.value &&
@@ -854,7 +853,7 @@ const onDrag = throttle((event: MouseEvent | TouchEvent) => {
     } else {
       ctrlSelectedItemsId.value.forEach((localId) => {
         const ctrlItem = items.value.find((refItem) => refItem.id === localId)
-        if (ctrlItem && ctrlItem.id) {
+        if (ctrlItem && ctrlItem.id !== undefined) {
           ctrlItem.x = newPosCtrlItems[ctrlItem.id].calcX
           ctrlItem.y = newPosCtrlItems[ctrlItem.id].calcY
         }
