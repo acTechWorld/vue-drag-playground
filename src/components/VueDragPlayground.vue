@@ -58,44 +58,92 @@
         @mousedown.stop="startDrag($event, item.id)"
         @touchstart.stop="startDrag($event, item.id)"
       >
-        <div :class="`item-${item.id}`" v-html="DOMPurify.sanitize(transformHtmlItem(item))"></div>
+        <div :class="`item-${item.id}`" v-html="DOMPurify.sanitize(item.html)"></div>
         <div v-if="isResize && !isCtrl">
           <div
-            class="w-4 h-4 absolute bg-white/50 rounded-[50%] -top-1 -right-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none"
+            style="transform: rotate(-45deg)"
+            class="w-4 h-4 absolute bg-white/50 rounded-[50%] -top-1 -right-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none group/cursor"
             :class="{ 'opacity-100': interactId === item.id }"
-            :style="{
-              cursor: `url(${createRotatedCursor(item.rotation - 45, item.id)}) 8 8, auto`,
-            }"
             @mousedown.stop="startResize($event, item.id, 'top-right')"
             @touchstart.stop="startResize($event, item.id, 'top-right')"
-          ></div>
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 512 512"
+              class="hidden group-hover/cursor:block cursor-none"
+            >
+              <g :fill="interactId === item.id ? 'green' : 'black'">
+                <path
+                  d="M504.3 273.6c4.9-4.5 7.7-10.9 7.7-17.6s-2.8-13-7.7-17.6l-112-104c-7-6.5-17.2-8.2-25.9-4.4s-14.4 12.5-14.4 22v56H160v-56c0-9.5-5.7-18.2-14.4-22s-18.9-2.1-25.9 4.4l-112 104C2.8 243 0 249.3 0 256s2.8 13 7.7 17.6l112 104c7 6.5 17.2 8.2 25.9 4.4s14.4-12.5 14.4-22v-56h192v56c0 9.5 5.7 18.2 14.4 22s18.9 2.1 25.9-4.4l112-104z"
+                />
+              </g>
+            </svg>
+          </div>
           <div
-            class="w-4 h-4 absolute bg-white/50 rounded-[50%] -top-1 -left-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none"
+            style="transform: rotate(45deg)"
+            class="w-4 h-4 absolute bg-white/50 rounded-[50%] -top-1 -left-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none group/cursor"
             :class="{ 'opacity-100': interactId === item.id }"
-            :style="{
-              cursor: `url(${createRotatedCursor(item.rotation + 45, item.id)}) 8 8, auto`,
-            }"
             @mousedown.stop="startResize($event, item.id, 'top-left')"
             @touchstart.stop="startResize($event, item.id, 'top-left')"
-          ></div>
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 512 512"
+              class="hidden group-hover/cursor:block cursor-none"
+            >
+              <g :fill="interactId === item.id ? 'green' : 'black'">
+                <path
+                  d="M504.3 273.6c4.9-4.5 7.7-10.9 7.7-17.6s-2.8-13-7.7-17.6l-112-104c-7-6.5-17.2-8.2-25.9-4.4s-14.4 12.5-14.4 22v56H160v-56c0-9.5-5.7-18.2-14.4-22s-18.9-2.1-25.9 4.4l-112 104C2.8 243 0 249.3 0 256s2.8 13 7.7 17.6l112 104c7 6.5 17.2 8.2 25.9 4.4s14.4-12.5 14.4-22v-56h192v56c0 9.5 5.7 18.2 14.4 22s18.9 2.1 25.9-4.4l112-104z"
+                />
+              </g>
+            </svg>
+          </div>
           <div
-            class="w-4 h-4 absolute bg-white/50 rounded-[50%] -bottom-1 -right-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none"
+            style="transform: rotate(45deg)"
+            class="w-4 h-4 absolute bg-white/50 rounded-[50%] -bottom-1 -right-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none group/cursor"
             :class="{ 'opacity-100': interactId === item.id }"
-            :style="{
-              cursor: `url(${createRotatedCursor(item.rotation - 135, item.id)}) 8 8, auto`,
-            }"
             @mousedown.stop="startResize($event, item.id, 'bottom-right')"
             @touchstart.stop="startResize($event, item.id, 'bottom-right')"
-          ></div>
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 512 512"
+              class="hidden group-hover/cursor:block cursor-none"
+            >
+              <g :fill="interactId === item.id ? 'green' : 'black'">
+                <path
+                  d="M504.3 273.6c4.9-4.5 7.7-10.9 7.7-17.6s-2.8-13-7.7-17.6l-112-104c-7-6.5-17.2-8.2-25.9-4.4s-14.4 12.5-14.4 22v56H160v-56c0-9.5-5.7-18.2-14.4-22s-18.9-2.1-25.9 4.4l-112 104C2.8 243 0 249.3 0 256s2.8 13 7.7 17.6l112 104c7 6.5 17.2 8.2 25.9 4.4s14.4-12.5 14.4-22v-56h192v56c0 9.5 5.7 18.2 14.4 22s18.9 2.1 25.9-4.4l112-104z"
+                />
+              </g>
+            </svg>
+          </div>
           <div
-            class="w-4 h-4 absolute bg-white/50 rounded-[50%] -bottom-1 -left-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none"
+            style="transform: rotate(-45deg)"
+            class="w-4 h-4 absolute bg-white/50 rounded-[50%] -bottom-1 -left-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none group/cursor"
             :class="{ 'opacity-100': interactId === item.id }"
-            :style="{
-              cursor: `url(${createRotatedCursor(item.rotation + 135, item.id)}) 8 8, auto`,
-            }"
             @mousedown.stop="startResize($event, item.id, 'bottom-left')"
             @touchstart.stop="startResize($event, item.id, 'bottom-left')"
-          ></div>
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 512 512"
+              class="hidden group-hover/cursor:block cursor-none"
+            >
+              <g :fill="interactId === item.id ? 'green' : 'black'">
+                <path
+                  d="M504.3 273.6c4.9-4.5 7.7-10.9 7.7-17.6s-2.8-13-7.7-17.6l-112-104c-7-6.5-17.2-8.2-25.9-4.4s-14.4 12.5-14.4 22v56H160v-56c0-9.5-5.7-18.2-14.4-22s-18.9-2.1-25.9 4.4l-112 104C2.8 243 0 249.3 0 256s2.8 13 7.7 17.6l112 104c7 6.5 17.2 8.2 25.9 4.4s14.4-12.5 14.4-22v-56h192v56c0 9.5 5.7 18.2 14.4 22s18.9 2.1 25.9-4.4l112-104z"
+                />
+              </g>
+            </svg>
+          </div>
         </div>
         <div
           v-if="isRotate && !isCtrl"
@@ -132,6 +180,7 @@ import {
   reactive,
   type Reactive,
   computed,
+  watch,
 } from 'vue'
 import DOMPurify from 'dompurify'
 interface DraggableItem {
@@ -145,20 +194,6 @@ interface DraggableItem {
   rotation?: number
 }
 
-// interface DraggableItem {
-//   id?: number
-//   name?: string
-//   html: string // HTML string to render
-//   x: number // X-coordinate for position
-//   y: number // Y-coordinate for position
-//   width: number
-//   height: number
-//   rotation: number
-//   initialAngle: number
-//   initialWidth: number
-//   initialHeight: number
-// }
-
 type ResizingHandle = 'top-right' | 'bottom-right' | 'top-left' | 'bottom-left'
 
 const props = withDefaults(
@@ -167,6 +202,7 @@ const props = withDefaults(
     isResize?: boolean
     isRotate?: boolean
     isCopy?: boolean
+    isMultiSelect?: boolean
     isDelete?: boolean
     throttleDelay?: number
     maxNumberOfItems?: number | undefined
@@ -176,6 +212,7 @@ const props = withDefaults(
     isDrag: true,
     isResize: false,
     isRotate: false,
+    isMultiSelect: true,
     isCopy: false,
     isDelete: false,
     throttleDelay: 1,
@@ -262,17 +299,6 @@ const throttle = (func: (event: MouseEvent | TouchEvent) => void, delay: number)
   }
 }
 
-function createRotatedCursor(angle: number, id: number) {
-  const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 512 512">
-      <g transform="rotate(${angle}, 256, 256)" fill="${interactId.value === id ? 'green' : 'black'}">
-        <path d="M504.3 273.6c4.9-4.5 7.7-10.9 7.7-17.6s-2.8-13-7.7-17.6l-112-104c-7-6.5-17.2-8.2-25.9-4.4s-14.4 12.5-14.4 22v56H160v-56c0-9.5-5.7-18.2-14.4-22s-18.9-2.1-25.9 4.4l-112 104C2.8 243 0 249.3 0 256s2.8 13 7.7 17.6l112 104c7 6.5 17.2 8.2 25.9 4.4s14.4-12.5 14.4-22v-56h192v56c0 9.5 5.7 18.2 14.4 22s18.9 2.1 25.9-4.4l112-104z"/>
-      </g>
-    </svg>
-  `
-  return `data:image/svg+xml;base64,${btoa(svg)}`
-}
-
 const calculateMenuPos = (id: number) => {
   const item = items.value.find((item) => item.id === id)
   const playground = document.querySelector('.vue-drag-playground')
@@ -315,19 +341,21 @@ const calculateMenuPos = (id: number) => {
 }
 
 const handleKeyDown = (event: KeyboardEvent) => {
-  if (isCtrl.value) {
-    if (event.key === 'c') {
-      // Copy logic
-      isCtrlC.value = true
-    } else if (isCtrlC.value && event.key === 'v') {
-      // Paste logic
-      ctrlSelectedItemsId.value.forEach((id) => copyItem(id))
-    } else if (event.key === 'Delete' || event.key === 'Backspace') {
-      ctrlSelectedItemsId.value.forEach((id) => deleteItem(id))
-      ctrlSelectedItemsId.value = []
+  if (props.isMultiSelect) {
+    if (isCtrl.value) {
+      if (event.key === 'c') {
+        // Copy logic
+        isCtrlC.value = true
+      } else if (isCtrlC.value && event.key === 'v') {
+        // Paste logic
+        ctrlSelectedItemsId.value.forEach((id) => copyItem(id))
+      } else if (event.key === 'Delete' || event.key === 'Backspace') {
+        ctrlSelectedItemsId.value.forEach((id) => deleteItem(id))
+        ctrlSelectedItemsId.value = []
+      }
+    } else {
+      isCtrl.value = event.key === 'Control' || event.key === 'Meta'
     }
-  } else {
-    isCtrl.value = event.key === 'Control' || event.key === 'Meta'
   }
 }
 
@@ -409,34 +437,19 @@ const handleClickItem = (id: number) => {
 }
 
 //RESIZE
-const transformHtmlItem = (item: DraggableItem) => {
-  const tempDiv = document.createElement('div')
-  tempDiv.innerHTML = DOMPurify.sanitize(item.html)
-  const child = tempDiv.children?.[0]
-  if (child) {
-    const currentStyles = child.getAttribute('style') || ''
-    // Parse current styles into a map
-    const stylesMap = new Map(
-      currentStyles
-        .split(';')
-        .map((style) => {
-          const [key, value] = style.split(':').map((s) => s.trim())
-          return key && value ? [key, value] : null
-        })
-        .filter(Boolean) as [string, string][],
-    )
-
-    // Add computed styles for fallback (if needed)
-    if (item.width) stylesMap.set('width', `${item.width}px`)
-    if (item.height) stylesMap.set('height', `${item.height}px`)
-    // Reconstruct the style string
-    const updatedStyleString = Array.from(stylesMap)
-      .map(([key, value]) => `${key}: ${value}`)
-      .join('; ')
-    child.setAttribute('style', updatedStyleString)
-    return child.outerHTML
-  }
-  return ''
+const applyStyleSizeItems = () => {
+  items.value.forEach((item) => {
+    if (item.id) {
+      const itemEl = document.querySelector(`.item-${item.id}`)
+      if (itemEl) {
+        const child = itemEl.children?.[0] as HTMLElement
+        if (child) {
+          if (item.width) child.style.width = `${item.width}px`
+          if (item.height) child.style.height = `${item.height}px`
+        }
+      }
+    }
+  })
 }
 const startResize = (event: MouseEvent | TouchEvent, id: number, handle: ResizingHandle) => {
   if (props.isResize && !isCtrl.value) {
@@ -980,6 +993,7 @@ onMounted(() => {
     }
   })
   maxIdUsed.value = items.value?.length - 1
+  applyStyleSizeItems()
   nextTick(() => initItems())
   document.addEventListener('keydown', handleKeyDown)
   document.addEventListener('keyup', handleKeyUp)
@@ -1002,4 +1016,13 @@ onUnmounted(() => {
   document.removeEventListener('touchmove', onRotate)
   document.removeEventListener('touchend', stopRotate)
 })
+
+/** WATCH */
+watch(
+  items,
+  () => {
+    nextTick(() => applyStyleSizeItems())
+  },
+  { deep: true },
+)
 </script>

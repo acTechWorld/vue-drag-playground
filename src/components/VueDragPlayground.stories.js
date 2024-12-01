@@ -14,10 +14,10 @@ const DefaultTemplate = (args) => ({
       refItems.value = refItems.value.map((it) =>
         it.name === item.name && it.id === item.id
           ? {
-              ...item,
-              html: ['astronaut', 'alien'].includes(item.name)
-                ? item.html.replace(/(<img[^>]*src=')[^']*(')/i, `$1${item.name}_dragging.gif$2`)
-                : item.html,
+              ...it,
+              html: ['astronaut', 'alien'].includes(it.name)
+                ? it.html.replace(/(<img[^>]*src=')[^']*(')/i, `$1${it.name}_dragging.gif$2`)
+                : it.html,
             }
           : it,
       )
@@ -26,10 +26,10 @@ const DefaultTemplate = (args) => ({
       refItems.value = refItems.value.map((it) =>
         it.name === item.name && it.id === item.id
           ? {
-              ...item,
-              html: ['astronaut', 'alien'].includes(item.name)
-                ? item.html.replace(/(<img[^>]*src=')[^']*(')/i, `$1${item.name}.gif$2`)
-                : item.html,
+              ...it,
+              html: ['astronaut', 'alien'].includes(it.name)
+                ? it.html.replace(/(<img[^>]*src=')[^']*(')/i, `$1${it.name}.gif$2`)
+                : it.html,
             }
           : it,
       )
@@ -131,6 +131,7 @@ Default.args = {
   isRotate: true,
   isCopy: true,
   isDelete: true,
+  isMultiSelect: true,
   maxNumberOfItems: 10,
   throttleDelay: 1,
 }
