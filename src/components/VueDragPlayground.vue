@@ -837,24 +837,29 @@ const onDrag = throttle((event: MouseEvent | TouchEvent) => {
     })
     if (blockingCtrlInteractionX.value || blockingCtrlInteractionY.value) {
       //TODO detect blocking direction then determine who is the neareast and block the others
+      const dYBlocking = blockingCtrlInteractionY.value
+        ? newPosCtrlItems[blockingCtrlInteractionY.value].calcY -
+          (items.value.find((refItem) => refItem.id === blockingCtrlInteractionY.value)?.y ?? 0)
+        : 0
+      const dXBlocking = blockingCtrlInteractionX.value
+        ? newPosCtrlItems[blockingCtrlInteractionX.value].calcX -
+          (items.value.find((refItem) => refItem.id === blockingCtrlInteractionX.value)?.x ?? 0)
+        : 0
       ctrlSelectedItemsId.value.forEach((localId) => {
         const ctrlItem = items.value.find((refItem) => refItem.id === localId)
         if (ctrlItem && ctrlItem.id !== undefined) {
-          console.log(ctrlItem.id)
-          console.log(ctrlItem.x)
           ctrlItem.x =
             blockingCtrlInteractionX.value &&
-            blockingCtrlInteractionX.value !== ctrlItem.id &&
-            firstBlockingCtrlInteractionXDone.value !== ctrlItem.id
-              ? ctrlItem.x
+            // firstBlockingCtrlInteractionXDone.value &&
+            blockingCtrlInteractionX.value !== ctrlItem.id
+              ? ctrlItem.x + dXBlocking
               : newPosCtrlItems[ctrlItem.id].calcX
           ctrlItem.y =
             blockingCtrlInteractionY.value &&
-            blockingCtrlInteractionY.value !== ctrlItem.id &&
-            firstBlockingCtrlInteractionYDone.value !== ctrlItem.id
-              ? ctrlItem.y
+            firstBlockingCtrlInteractionYDone.value &&
+            blockingCtrlInteractionY.value !== ctrlItem.id
+              ? ctrlItem.y + dYBlocking
               : newPosCtrlItems[ctrlItem.id].calcY
-          console.log(ctrlItem.x)
         }
       })
       if (!firstBlockingCtrlInteractionXDone.value)
