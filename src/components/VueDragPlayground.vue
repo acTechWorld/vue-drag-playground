@@ -232,9 +232,11 @@ const initialValues: Reactive<{
   }
 }> = reactive({})
 const ctrlSelectedItemsId: Ref<number[]> = ref([])
-const blockingCtrlInteractionX: Ref<false | number> = ref(false)
+const blockingLeftMulti = ref(false)
+const blockingRightMulti = ref(false)
+const blockingTopMulti = ref(false)
+const blockingBottomMulti = ref(false)
 const firstBlockingCtrlInteractionXDone: Ref<false | number> = ref(false)
-const blockingCtrlInteractionY: Ref<false | number> = ref(false)
 const firstBlockingCtrlInteractionYDone: Ref<false | number> = ref(false)
 const maxIdUsed = ref(0)
 const interactId = ref<number | null>(null)
@@ -801,6 +803,7 @@ const startDrag = (event: MouseEvent | TouchEvent, id: number) => {
 }
 
 const onDrag = throttle((event: MouseEvent | TouchEvent) => {
+  //TODO item 2 + item 5 dragmulti botton bug
   event.stopPropagation()
   const playground = document.querySelector('.vue-drag-playground')
   const item = items.value.find((item) => item.id === interactId.value)
@@ -835,37 +838,103 @@ const onDrag = throttle((event: MouseEvent | TouchEvent) => {
         newPosCtrlItems[ctrlItem.id] = { calcX, calcY }
       }
     })
-    if (blockingCtrlInteractionX.value || blockingCtrlInteractionY.value) {
-      //TODO detect blocking direction then determine who is the neareast and block the others
-      const dYBlocking = blockingCtrlInteractionY.value
-        ? newPosCtrlItems[blockingCtrlInteractionY.value].calcY -
-          (items.value.find((refItem) => refItem.id === blockingCtrlInteractionY.value)?.y ?? 0)
+    if (
+      blockingLeftMulti.value ||
+      blockingRightMulti.value ||
+      blockingBottomMulti.value ||
+      blockingTopMulti.value
+    ) {
+      let blockingXIndex: number | false = false
+      let blockingYIndex: number | false = false
+      if (firstBlockingCtrlInteractionXDone.value) {
+        if (blockingLeftMulti.value || blockingRightMulti.value) {
+          blockingXIndex = firstBlockingCtrlInteractionXDone.value
+        } else {
+          firstBlockingCtrlInteractionXDone.value = false
+        }
+      } else {
+        if (blockingLeftMulti.value) {
+          const indexString = Object.entries(newPosCtrlItems).reduce<
+            [string | null, { calcX: number }]
+          >(
+            (min, [key, value]) => {
+              return value.calcX < min[1].calcX ? [key, value] : min
+            },
+            [null, { calcX: Infinity }], // Initial value
+          )[0]
+          blockingXIndex = indexString ? parseInt(indexString) : false
+          firstBlockingCtrlInteractionXDone.value = blockingXIndex
+        } else if (blockingRightMulti.value) {
+          const indexString = Object.entries(newPosCtrlItems).reduce<
+            [string | null, { calcX: number }]
+          >(
+            (max, [key, value]) => {
+              return value.calcX > max[1].calcX ? [key, value] : max
+            },
+            [null, { calcX: -Infinity }], // Initial value
+          )[0]
+          blockingXIndex = indexString ? parseInt(indexString) : false
+          firstBlockingCtrlInteractionXDone.value = blockingXIndex
+        } else {
+          firstBlockingCtrlInteractionXDone.value = false
+        }
+      }
+
+      if (firstBlockingCtrlInteractionYDone.value) {
+        if (blockingTopMulti.value || blockingBottomMulti.value) {
+          blockingYIndex = firstBlockingCtrlInteractionYDone.value
+        } else {
+          firstBlockingCtrlInteractionYDone.value = false
+        }
+      } else {
+        if (blockingTopMulti.value) {
+          const indexString = Object.entries(newPosCtrlItems).reduce<
+            [string | null, { calcY: number }]
+          >(
+            (min, [key, value]) => {
+              return value.calcY < min[1].calcY ? [key, value] : min
+            },
+            [null, { calcY: Infinity }], // Initial value
+          )[0]
+          blockingYIndex = indexString ? parseInt(indexString) : false
+          firstBlockingCtrlInteractionYDone.value = blockingYIndex
+        } else if (blockingBottomMulti.value) {
+          console.log(newPosCtrlItems[2], newPosCtrlItems[5])
+          const indexString = Object.entries(newPosCtrlItems).reduce<
+            [string | null, { calcY: number }]
+          >(
+            (max, [key, value]) => {
+              return value.calcY > max[1].calcY ? [key, value] : max
+            },
+            [null, { calcY: -Infinity }], // Initial value
+          )[0]
+          blockingYIndex = indexString ? parseInt(indexString) : false
+          firstBlockingCtrlInteractionYDone.value = blockingYIndex
+        } else {
+          firstBlockingCtrlInteractionYDone.value = false
+        }
+      }
+      const dXBlocking = blockingXIndex
+        ? newPosCtrlItems[blockingXIndex].calcX -
+          (items.value.find((refItem) => refItem.id === blockingXIndex)?.x ?? 0)
         : 0
-      const dXBlocking = blockingCtrlInteractionX.value
-        ? newPosCtrlItems[blockingCtrlInteractionX.value].calcX -
-          (items.value.find((refItem) => refItem.id === blockingCtrlInteractionX.value)?.x ?? 0)
+      const dYBlocking = blockingYIndex
+        ? newPosCtrlItems[blockingYIndex].calcY -
+          (items.value.find((refItem) => refItem.id === blockingYIndex)?.y ?? 0)
         : 0
       ctrlSelectedItemsId.value.forEach((localId) => {
         const ctrlItem = items.value.find((refItem) => refItem.id === localId)
         if (ctrlItem && ctrlItem.id !== undefined) {
           ctrlItem.x =
-            blockingCtrlInteractionX.value &&
-            // firstBlockingCtrlInteractionXDone.value &&
-            blockingCtrlInteractionX.value !== ctrlItem.id
+            blockingXIndex && blockingXIndex !== ctrlItem.id
               ? ctrlItem.x + dXBlocking
               : newPosCtrlItems[ctrlItem.id].calcX
           ctrlItem.y =
-            blockingCtrlInteractionY.value &&
-            firstBlockingCtrlInteractionYDone.value &&
-            blockingCtrlInteractionY.value !== ctrlItem.id
+            blockingYIndex && blockingYIndex !== ctrlItem.id
               ? ctrlItem.y + dYBlocking
               : newPosCtrlItems[ctrlItem.id].calcY
         }
       })
-      if (!firstBlockingCtrlInteractionXDone.value)
-        firstBlockingCtrlInteractionXDone.value = blockingCtrlInteractionX.value
-      if (!firstBlockingCtrlInteractionYDone.value)
-        firstBlockingCtrlInteractionYDone.value = blockingCtrlInteractionY.value
     } else {
       ctrlSelectedItemsId.value.forEach((localId) => {
         const ctrlItem = items.value.find((refItem) => refItem.id === localId)
@@ -877,8 +946,10 @@ const onDrag = throttle((event: MouseEvent | TouchEvent) => {
       firstBlockingCtrlInteractionXDone.value = false
       firstBlockingCtrlInteractionYDone.value = false
     }
-    blockingCtrlInteractionX.value = false
-    blockingCtrlInteractionY.value = false
+    blockingLeftMulti.value = false
+    blockingRightMulti.value = false
+    blockingBottomMulti.value = false
+    blockingTopMulti.value = false
   } else {
     const { x: calcX, y: calcY } = calculateDragItemNewPos(
       item,
@@ -924,30 +995,22 @@ const calculateDragItemNewPos = (
   let clampedX = newX
   let clampedY = newY
 
-  const isBlockingXPossible =
-    isMultipleDrag &&
-    (firstBlockingCtrlInteractionXDone.value === item.id ||
-      !firstBlockingCtrlInteractionXDone.value)
-  const isBlockingYPossible =
-    isMultipleDrag &&
-    (firstBlockingCtrlInteractionYDone.value === item.id ||
-      !firstBlockingCtrlInteractionYDone.value)
   // Clamp the x-coordinate
   if (minX + (newX - item.x) < 0) {
     clampedX = item.x + (0 - minX) // Align to left boundary
-    if (isBlockingXPossible) blockingCtrlInteractionX.value = item.id as number
+    blockingLeftMulti.value = isMultipleDrag
   } else if (maxX + (newX - item.x) > playgroundBounds.width) {
     clampedX = item.x + (playgroundBounds.width - maxX) // Align to right boundary
-    if (isBlockingXPossible) blockingCtrlInteractionX.value = item.id as number
+    blockingRightMulti.value = isMultipleDrag
   }
 
   // Clamp the y-coordinate
   if (minY + (newY - item.y) < 0) {
     clampedY = item.y + (0 - minY) // Align to top boundary
-    if (isBlockingYPossible) blockingCtrlInteractionY.value = item.id as number
+    blockingTopMulti.value = isMultipleDrag
   } else if (maxY + (newY - item.y) > playgroundBounds.height) {
     clampedY = item.y + (playgroundBounds.height - maxY) // Align to bottom boundary
-    if (isBlockingYPossible) blockingCtrlInteractionY.value = item.id as number
+    blockingBottomMulti.value = isMultipleDrag
   }
 
   // Update the item's position with precise boundary alignment
