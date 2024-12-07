@@ -55,6 +55,13 @@ Default.args = {
       rotation: 50,
     },
     {
+      name: 'block11',
+      html: "<h1 style='background: blue; width: 100px'>Heading</h1>",
+      x: 150,
+      y: 50,
+      rotation: 50,
+    },
+    {
       name: 'block2',
       html: "<div class='yo' style='background: yellow; padding: 10px;'>Box</div>",
       x: 350,

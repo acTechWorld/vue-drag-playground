@@ -48,7 +48,7 @@
           'cursor-grab': interactId !== item.id && isDrag && !isCtrl,
           'cursor-pointer': isCtrl,
           'border-dashed border-2 border-black': ctrlSelectedItemsId.includes(item.id),
-          'z-[3]': interactId === item.id,
+          'z-[3]': interactId === item.id || ctrlSelectedItemsId.includes(item.id),
         }"
         class="z-[1] relative group-hover:z-[3]"
         :style="{
@@ -238,7 +238,7 @@ const blockingTopMulti = ref(false)
 const blockingBottomMulti = ref(false)
 const firstBlockingCtrlInteractionXDone: Ref<false | number> = ref(false)
 const firstBlockingCtrlInteractionYDone: Ref<false | number> = ref(false)
-const maxIdUsed = ref(0)
+const maxIdUsed = ref(1)
 const interactId = ref<number | null>(null)
 const isCtrl = ref(false)
 const isCtrlC = ref(false)
@@ -278,7 +278,7 @@ const displayedItems = computed(() =>
   items.value
     .map((item, key) => ({
       ...item,
-      id: item.id ?? key,
+      id: item.id ?? key + 1,
       width: item.width ?? 0,
       height: item.height ?? 0,
       rotation: item.rotation ?? 0,
@@ -441,7 +441,7 @@ const handleClickItem = (id: number) => {
 //RESIZE
 const applyStyleSizeItems = () => {
   items.value.forEach((item) => {
-    if (item.id) {
+    if (item.id !== undefined) {
       const itemEl = document.querySelector(`.item-${item.id}`)
       if (itemEl) {
         const child = itemEl.children?.[0] as HTMLElement
@@ -487,6 +487,7 @@ const clamp = (value: number, min: number, max: number) => {
 }
 
 const onResize = throttle((event: MouseEvent | TouchEvent) => {
+  //TODO fix multi resize with items rotate in oposite angles
   event.stopPropagation()
   const playground = document.querySelector('.vue-drag-playground')
   const item = items.value.find((item) => item.id === interactId.value)
@@ -803,7 +804,6 @@ const startDrag = (event: MouseEvent | TouchEvent, id: number) => {
 }
 
 const onDrag = throttle((event: MouseEvent | TouchEvent) => {
-  //TODO item 2 + item 5 dragmulti botton bug
   event.stopPropagation()
   const playground = document.querySelector('.vue-drag-playground')
   const item = items.value.find((item) => item.id === interactId.value)
@@ -824,18 +824,34 @@ const onDrag = throttle((event: MouseEvent | TouchEvent) => {
     item.id !== undefined &&
     ctrlSelectedItemsId.value.includes(item.id)
   ) {
-    const newPosCtrlItems: { [key: number]: { calcX: number; calcY: number } } = {}
+    const newPosCtrlItems: {
+      [key: number]: {
+        calcX: number
+        calcY: number
+        minX: number
+        minY: number
+        maxX: number
+        maxY: number
+      }
+    } = {}
     ctrlSelectedItemsId.value.forEach((localId) => {
       const ctrlItem = items.value.find((refItem) => refItem.id === localId)
       if (ctrlItem && ctrlItem.id !== undefined) {
-        const { x: calcX, y: calcY } = calculateDragItemNewPos(
+        const {
+          x: calcX,
+          y: calcY,
+          minX,
+          minY,
+          maxX,
+          maxY,
+        } = calculateDragItemNewPos(
           ctrlItem,
           ctrlItem.x + newX - item.x,
           ctrlItem.y + newY - item.y,
           playgroundBounds,
           true,
         )
-        newPosCtrlItems[ctrlItem.id] = { calcX, calcY }
+        newPosCtrlItems[ctrlItem.id] = { calcX, calcY, minX, minY, maxX, maxY }
       }
     })
     if (
@@ -855,23 +871,23 @@ const onDrag = throttle((event: MouseEvent | TouchEvent) => {
       } else {
         if (blockingLeftMulti.value) {
           const indexString = Object.entries(newPosCtrlItems).reduce<
-            [string | null, { calcX: number }]
+            [string | null, { minX: number }]
           >(
             (min, [key, value]) => {
-              return value.calcX < min[1].calcX ? [key, value] : min
+              return value.minX < min[1].minX ? [key, value] : min
             },
-            [null, { calcX: Infinity }], // Initial value
+            [null, { minX: Infinity }], // Initial value
           )[0]
           blockingXIndex = indexString ? parseInt(indexString) : false
           firstBlockingCtrlInteractionXDone.value = blockingXIndex
         } else if (blockingRightMulti.value) {
           const indexString = Object.entries(newPosCtrlItems).reduce<
-            [string | null, { calcX: number }]
+            [string | null, { maxX: number }]
           >(
             (max, [key, value]) => {
-              return value.calcX > max[1].calcX ? [key, value] : max
+              return value.maxX > max[1].maxX ? [key, value] : max
             },
-            [null, { calcX: -Infinity }], // Initial value
+            [null, { maxX: -Infinity }], // Initial value
           )[0]
           blockingXIndex = indexString ? parseInt(indexString) : false
           firstBlockingCtrlInteractionXDone.value = blockingXIndex
@@ -889,24 +905,23 @@ const onDrag = throttle((event: MouseEvent | TouchEvent) => {
       } else {
         if (blockingTopMulti.value) {
           const indexString = Object.entries(newPosCtrlItems).reduce<
-            [string | null, { calcY: number }]
+            [string | null, { minY: number }]
           >(
             (min, [key, value]) => {
-              return value.calcY < min[1].calcY ? [key, value] : min
+              return value.minY < min[1].minY ? [key, value] : min
             },
-            [null, { calcY: Infinity }], // Initial value
+            [null, { minY: Infinity }], // Initial value
           )[0]
           blockingYIndex = indexString ? parseInt(indexString) : false
           firstBlockingCtrlInteractionYDone.value = blockingYIndex
         } else if (blockingBottomMulti.value) {
-          console.log(newPosCtrlItems[2], newPosCtrlItems[5])
           const indexString = Object.entries(newPosCtrlItems).reduce<
-            [string | null, { calcY: number }]
+            [string | null, { maxY: number }]
           >(
             (max, [key, value]) => {
-              return value.calcY > max[1].calcY ? [key, value] : max
+              return value.maxY > max[1].maxY ? [key, value] : max
             },
-            [null, { calcY: -Infinity }], // Initial value
+            [null, { maxY: -Infinity }], // Initial value
           )[0]
           blockingYIndex = indexString ? parseInt(indexString) : false
           firstBlockingCtrlInteractionYDone.value = blockingYIndex
@@ -1017,6 +1032,10 @@ const calculateDragItemNewPos = (
   return {
     x: clampedX,
     y: clampedY,
+    minX,
+    maxX,
+    minY,
+    maxY,
   }
 }
 const stopDrag = () => {
@@ -1064,11 +1083,11 @@ onMounted(() => {
       initialHeight: item.height ?? 0, //Help for managing resize
     }
     return {
-      id: key,
+      id: key + 1,
       ...item,
     }
   })
-  maxIdUsed.value = items.value?.length - 1
+  maxIdUsed.value = items.value?.length
   applyStyleSizeItems()
   nextTick(() => initItems())
   document.addEventListener('keydown', handleKeyDown)
