@@ -139,6 +139,6 @@ Default.args = {
   isCopy: true,
   isDelete: true,
   isMultiSelect: true,
-  maxNumberOfItems: 10,
+  maxNumberOfItems: 20,
   throttleDelay: 1,
 }

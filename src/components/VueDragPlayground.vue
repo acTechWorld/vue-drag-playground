@@ -7,6 +7,7 @@
       v-for="(item, index) in displayedItems"
       :key="index"
       class="w-fit h-fit absolute group"
+      :class="`item_container_${index}`"
       :style="{
         left: item.x + 'px',
         top: item.y + 'px',
@@ -15,7 +16,7 @@
       <!-- Copy and Delete buttons -->
       <div
         v-if="(isCopy || isDelete) && !isCtrl"
-        class="z-0 group-hover:z-[2] group-hover:opacity-100 transition-opacity duration-500 group-hover:pointer-events-auto pointer-events-none opacity-0 absolute flex gap-2"
+        class="copy_delete_btn_container z-0 group-hover:z-[2] group-hover:opacity-100 transition-opacity duration-500 group-hover:pointer-events-auto pointer-events-none opacity-0 absolute flex gap-2"
         :class="{ 'opacity-100 z-[2]': interactId === item.id }"
         :style="calculateMenuPos(item.id)"
       >
@@ -23,7 +24,7 @@
           v-if="isCopy"
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 448 512"
-          class="fill-black h-5 cursor-pointer"
+          class="copy_btn_icon fill-black h-5 cursor-pointer"
           @click.stop="copyItem(item.id)"
         >
           <path
@@ -34,7 +35,7 @@
           v-if="isDelete"
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 448 512"
-          class="fill-black h-5 cursor-pointer"
+          class="delete_btn_icon fill-black h-5 cursor-pointer"
           @click.stop="deleteItem(item.id)"
         >
           <path
@@ -50,7 +51,7 @@
           'border-dashed border-2 border-black': ctrlSelectedItemsId.includes(item.id),
           'z-[3]': interactId === item.id || ctrlSelectedItemsId.includes(item.id),
         }"
-        class="z-[1] relative group-hover:z-[3]"
+        class="item_controler_panel z-[1] relative group-hover:z-[3]"
         :style="{
           transform: `rotate(${item.rotation}deg) translate3d(0, 0, 0)`,
         }"
@@ -59,10 +60,10 @@
         @touchstart.stop="startDrag($event, item.id)"
       >
         <div :class="`item-${item.id}`" v-html="DOMPurify.sanitize(item.html)"></div>
-        <div v-if="isResize && !isCtrl">
+        <div v-if="isResize && !isCtrl" class="resize_btn_container">
           <div
             style="transform: rotate(-45deg)"
-            class="w-4 h-4 absolute bg-white/50 rounded-[50%] -top-1 -right-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none group/cursor"
+            class="resize_btn_top_right w-4 h-4 absolute bg-white/50 rounded-[50%] -top-1 -right-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none group/cursor"
             :class="{ 'opacity-100': interactId === item.id }"
             @mousedown.stop="startResize($event, item.id, 'top-right')"
             @touchstart.stop="startResize($event, item.id, 'top-right')"
@@ -83,7 +84,7 @@
           </div>
           <div
             style="transform: rotate(45deg)"
-            class="w-4 h-4 absolute bg-white/50 rounded-[50%] -top-1 -left-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none group/cursor"
+            class="resize_btn_top_left w-4 h-4 absolute bg-white/50 rounded-[50%] -top-1 -left-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none group/cursor"
             :class="{ 'opacity-100': interactId === item.id }"
             @mousedown.stop="startResize($event, item.id, 'top-left')"
             @touchstart.stop="startResize($event, item.id, 'top-left')"
@@ -104,7 +105,7 @@
           </div>
           <div
             style="transform: rotate(45deg)"
-            class="w-4 h-4 absolute bg-white/50 rounded-[50%] -bottom-1 -right-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none group/cursor"
+            class="resize_btn_bottom_right w-4 h-4 absolute bg-white/50 rounded-[50%] -bottom-1 -right-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none group/cursor"
             :class="{ 'opacity-100': interactId === item.id }"
             @mousedown.stop="startResize($event, item.id, 'bottom-right')"
             @touchstart.stop="startResize($event, item.id, 'bottom-right')"
@@ -125,7 +126,7 @@
           </div>
           <div
             style="transform: rotate(-45deg)"
-            class="w-4 h-4 absolute bg-white/50 rounded-[50%] -bottom-1 -left-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none group/cursor"
+            class="resize_btn_bottom_left w-4 h-4 absolute bg-white/50 rounded-[50%] -bottom-1 -left-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none group/cursor"
             :class="{ 'opacity-100': interactId === item.id }"
             @mousedown.stop="startResize($event, item.id, 'bottom-left')"
             @touchstart.stop="startResize($event, item.id, 'bottom-left')"
@@ -147,12 +148,12 @@
         </div>
         <div
           v-if="isRotate && !isCtrl"
-          class="absolute top-0 flex w-full h-10 -translate-y-full group-hover:pointer-events-auto pointer-events-none"
+          class="rotate_btn absolute top-0 flex w-full h-10 -translate-y-full group-hover:pointer-events-auto pointer-events-none"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 512 512"
-            class="w-6 h-6 p-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none absolute bg-black rounded-[50%] cursor-pointer top-2 left-1/2 transform -translate-x-1/2"
+            class="rotate_btn_icon w-6 h-6 p-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none absolute bg-black rounded-[50%] cursor-pointer top-2 left-1/2 transform -translate-x-1/2"
             :class="[
               { 'opacity-100': interactId === item.id },
               interactId === item.id && isRotating ? 'fill-green-500' : 'fill-white',
@@ -284,6 +285,12 @@ const displayedItems = computed(() =>
       rotation: item.rotation ?? 0,
     }))
     ?.slice(0, props.maxNumberOfItems),
+)
+
+const needInitItems = computed(() =>
+  items.value.filter(
+    (item) => item.width === undefined || item.height === undefined || item.id === undefined,
+  ),
 )
 /**
  * METHODS
@@ -1059,7 +1066,10 @@ const initItems = () => {
       if (itemEl && bounds) {
         item.width = item.width ? item.width : bounds.width
         item.height = item.height ? item.height : bounds.height
-
+        if (!item.id) {
+          maxIdUsed.value += 1
+          item.id = maxIdUsed.value
+        }
         const { x: calcX, y: calcY } = calculateDragItemNewPos(
           item,
           item.x,
@@ -1116,6 +1126,7 @@ onUnmounted(() => {
 watch(
   items,
   () => {
+    if (needInitItems.value?.length > 0) initItems()
     nextTick(() => applyStyleSizeItems())
   },
   { deep: true },
