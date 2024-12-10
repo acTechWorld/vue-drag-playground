@@ -1081,7 +1081,7 @@ const initItems = () => {
 //LIFECYCLE
 onMounted(() => {
   items.value = items.value.map((item, key) => {
-    initialValues[key] = {
+    initialValues[key + 1] = {
       initialAngle: 0, //Help for managing rotation
       initialWidth: item.width ?? 0, //Help for managing resize
       initialHeight: item.height ?? 0, //Help for managing resize
