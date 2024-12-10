@@ -286,11 +286,9 @@ const displayedItems = computed(() =>
     }))
     ?.slice(0, props.maxNumberOfItems),
 )
-
-const needInitItems = computed(() =>
-  items.value.filter(
-    (item) => item.width === undefined || item.height === undefined || item.id === undefined,
-  ),
+const noIdItems = computed(() => items.value.filter((item) => item.id === undefined))
+const noSizeItems = computed(() =>
+  items.value.filter((item) => item.width === undefined || item.height === undefined),
 )
 /**
  * METHODS
@@ -1066,10 +1064,6 @@ const initItems = () => {
       if (itemEl && bounds) {
         item.width = item.width ? item.width : bounds.width
         item.height = item.height ? item.height : bounds.height
-        if (!item.id) {
-          maxIdUsed.value += 1
-          item.id = maxIdUsed.value
-        }
         const { x: calcX, y: calcY } = calculateDragItemNewPos(
           item,
           item.x,
@@ -1126,8 +1120,18 @@ onUnmounted(() => {
 watch(
   items,
   () => {
-    if (needInitItems.value?.length > 0) initItems()
-    nextTick(() => applyStyleSizeItems())
+    if (noIdItems.value?.length > 0) {
+      items.value?.map((item) => {
+        if (!item.id) {
+          maxIdUsed.value += 1
+          item.id = maxIdUsed.value
+        }
+      })
+    }
+    nextTick(() => {
+      if (noSizeItems.value?.length > 0) initItems()
+      applyStyleSizeItems()
+    })
   },
   { deep: true },
 )
