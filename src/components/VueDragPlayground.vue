@@ -1121,10 +1121,20 @@ watch(
   items,
   () => {
     if (noIdItems.value?.length > 0) {
-      items.value?.map((item) => {
+      items.value = items.value?.map((item) => {
         if (!item.id) {
           maxIdUsed.value += 1
-          item.id = maxIdUsed.value
+          initialValues[maxIdUsed.value] = {
+            initialAngle: 0, //Help for managing rotation
+            initialWidth: item.width ?? 0, //Help for managing resize
+            initialHeight: item.height ?? 0, //Help for managing resize
+          }
+          return {
+            id: maxIdUsed.value,
+            ...item,
+          }
+        } else {
+          return item
         }
       })
     }
