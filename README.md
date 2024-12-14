@@ -139,8 +139,10 @@ The component supports the following props to customize its behavior:
 - **isDelete** (`Boolean`): Enables/disables item removal. Default: `false`.
 - **isMultiSelect** (`Boolean`): Enables/disables multi-selection functionality with `CTRL` click. Default: `true`.
 - **throttleDelay** (`Number`): Delay (in ms) to throttle events like dragging, resizing, and rotating. Default: `1`.
-- **maxNumberOfItems** (`Number`): Maximum number of items allowed. Default: `undefined`.
-- **multiRotationMode** (`String`): Specifies rotation behavior for grouped items ('proportional' or 'uniform'). Default: `'proportional'`.
+- **maxNumberOfItems** (`Number | undefined`): Maximum number of items allowed. If undefined, there is no limit (i.e., infinite items are allowed). Default: undefined.
+- **multiRotationMode** (`String`): Specifies rotation behavior for grouped items when multiple items are selected for rotation. This prop can have the following values:
+  - **'proportional'**: When this mode is selected, the items will maintain their individual rotation angles relative to each other. Essentially, the rotation of each item remains in proportion to its original angle.
+  - **'uniform'**: In this mode, all selected items will be rotated to the same angle. The rotation is aligned, so all items will be rotated together as if they share the same angle.
 
 ### Emits
 
