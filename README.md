@@ -15,25 +15,13 @@ VueDragPlayground is a versatile Vue 3 library designed to create dynamic and in
 
 ### Installation
 
-#### For Vue 3
+#### Package
 
-To install VueDragPlayground for Vue 3, run:
+To install VueDragPlayground, run:
 
 ```bash
 npm install vue-drag-playground
 ```
-
-#### For Vue 2
-
-To install VueDragPlayground for Vue 2, you’ll need to install the Vue 2 compatible version of the library. Run:
-
-```bash
-npm install vue-drag-playground@1.0.0
-```
-
-> **Note**: The Vue 2 version has a different API compared to Vue 3. Please refer to the version-specific documentation for usage.
-
-### Usage
 
 #### Global Registration
 
@@ -119,7 +107,9 @@ export default {
 </script>
 ```
 
-## Props
+## Documentation
+
+### Props
 
 The component supports the following props to customize its behavior:
 
@@ -152,7 +142,7 @@ The component supports the following props to customize its behavior:
 - **maxNumberOfItems** (`Number`): Maximum number of items allowed. Default: `undefined`.
 - **multiRotationMode** (`String`): Specifies rotation behavior for grouped items ('proportional' or 'uniform'). Default: `'proportional'`.
 
-## Emits
+### Emits
 
 The following events can be emitted by the component to inform the parent about user interactions:
 
@@ -168,7 +158,7 @@ The following events can be emitted by the component to inform the parent about 
 
 Each event provides the entire updated item, including all properties such as its position (`x`, `y`), size (`width`, `height`), and rotation (`rotation`).
 
-## Multi Interaction (CTRL Click)
+### Multi Interaction (CTRL Click)
 
 VueDragPlayground supports **multi-selection interaction** using the `CTRL` key. By holding the `CTRL` key while clicking on multiple items, users can select and interact with those items simultaneously. This works for the following actions:
 
@@ -232,7 +222,9 @@ const onDragEnd = (updatedItem) => console.log('Drag ended:', updatedItem)
 
 const onResizeStart = (updatedItem) => console.log('Resize started:', updatedItem)
 const onResizing = (updatedItem) => console.log('Resizing:', updatedItem)
-const onResizeEnd = (updatedItem) => console.log('Resize ended:', updatedItem)
+const onResizeEnd = (updatedItem) => console.log('
+
+Resize ended:', updatedItem)
 
 const onRotationStart = (updatedItem) => console.log('Rotation started:', updatedItem)
 const onRotating = (updatedItem) => console.log('Rotating:', updatedItem)
