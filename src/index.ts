@@ -11,6 +11,6 @@ import './assets/main.css'
 // Install function for the plugin system
 export default {
   install(app: App) {
-    app.component('VueOnboardingTour', VueDragPlayground)
+    app.component('VueDragPlayground', VueDragPlayground)
   },
 }

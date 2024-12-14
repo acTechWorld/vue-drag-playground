@@ -1,9 +1,13 @@
 <template>
-  <div class="vue-drag-playground select-none relative" @mousedown="handleClickPlayground">
+  <div
+    class="vue-drag-playground select-none relative w-full h-full"
+    @mousedown="handleClickPlayground"
+  >
     <div
-      v-for="(item, index) in refItems"
+      v-for="(item, index) in displayedItems"
       :key="index"
       class="w-fit h-fit absolute group"
+      :class="`item_container_${index}`"
       :style="{
         left: item.x + 'px',
         top: item.y + 'px',
@@ -12,7 +16,7 @@
       <!-- Copy and Delete buttons -->
       <div
         v-if="(isCopy || isDelete) && !isCtrl"
-        class="z-0 group-hover:z-[2] group-hover:opacity-100 transition-opacity duration-500 group-hover:pointer-events-auto pointer-events-none opacity-0 absolute flex gap-2"
+        class="copy_delete_btn_container z-0 group-hover:z-[2] group-hover:opacity-100 transition-opacity duration-500 group-hover:pointer-events-auto pointer-events-none opacity-0 absolute flex gap-2"
         :class="{ 'opacity-100 z-[2]': interactId === item.id }"
         :style="calculateMenuPos(item.id)"
       >
@@ -20,7 +24,7 @@
           v-if="isCopy"
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 448 512"
-          class="fill-black h-5 cursor-pointer"
+          class="copy_btn_icon fill-black h-5 cursor-pointer"
           @click.stop="copyItem(item.id)"
         >
           <path
@@ -31,7 +35,7 @@
           v-if="isDelete"
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 448 512"
-          class="fill-black h-5 cursor-pointer"
+          class="delete_btn_icon fill-black h-5 cursor-pointer"
           @click.stop="deleteItem(item.id)"
         >
           <path
@@ -45,9 +49,9 @@
           'cursor-grab': interactId !== item.id && isDrag && !isCtrl,
           'cursor-pointer': isCtrl,
           'border-dashed border-2 border-black': ctrlSelectedItemsId.includes(item.id),
-          'z-[3]': interactId === item.id,
+          'z-[3]': interactId === item.id || ctrlSelectedItemsId.includes(item.id),
         }"
-        class="z-[1] relative group-hover:z-[3]"
+        class="item_controler_panel z-[1] relative group-hover:z-[3]"
         :style="{
           transform: `rotate(${item.rotation}deg) translate3d(0, 0, 0)`,
         }"
@@ -55,53 +59,101 @@
         @mousedown.stop="startDrag($event, item.id)"
         @touchstart.stop="startDrag($event, item.id)"
       >
-        <div :class="`item-${item.id}`" v-html="DOMPurify.sanitize(transformHtmlItem(item))"></div>
-        <div v-if="isResize && !isCtrl">
+        <div :class="`item-${item.id}`" v-html="DOMPurify.sanitize(item.html)"></div>
+        <div v-if="isResize && !isCtrl" class="resize_btn_container">
           <div
-            class="w-4 h-4 absolute bg-white/50 rounded-[50%] -top-1 -right-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none"
+            style="transform: rotate(-45deg)"
+            class="resize_btn_top_right w-4 h-4 absolute bg-white/50 rounded-[50%] -top-1 -right-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none group/cursor"
             :class="{ 'opacity-100': interactId === item.id }"
-            :style="{
-              cursor: `url(${createRotatedCursor(item.rotation - 45, item.id)}) 8 8, auto`,
-            }"
             @mousedown.stop="startResize($event, item.id, 'top-right')"
             @touchstart.stop="startResize($event, item.id, 'top-right')"
-          ></div>
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 512 512"
+              class="hidden group-hover/cursor:block cursor-none"
+            >
+              <g :fill="interactId === item.id ? 'green' : 'black'">
+                <path
+                  d="M504.3 273.6c4.9-4.5 7.7-10.9 7.7-17.6s-2.8-13-7.7-17.6l-112-104c-7-6.5-17.2-8.2-25.9-4.4s-14.4 12.5-14.4 22v56H160v-56c0-9.5-5.7-18.2-14.4-22s-18.9-2.1-25.9 4.4l-112 104C2.8 243 0 249.3 0 256s2.8 13 7.7 17.6l112 104c7 6.5 17.2 8.2 25.9 4.4s14.4-12.5 14.4-22v-56h192v56c0 9.5 5.7 18.2 14.4 22s18.9 2.1 25.9-4.4l112-104z"
+                />
+              </g>
+            </svg>
+          </div>
           <div
-            class="w-4 h-4 absolute bg-white/50 rounded-[50%] -top-1 -left-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none"
+            style="transform: rotate(45deg)"
+            class="resize_btn_top_left w-4 h-4 absolute bg-white/50 rounded-[50%] -top-1 -left-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none group/cursor"
             :class="{ 'opacity-100': interactId === item.id }"
-            :style="{
-              cursor: `url(${createRotatedCursor(item.rotation + 45, item.id)}) 8 8, auto`,
-            }"
             @mousedown.stop="startResize($event, item.id, 'top-left')"
             @touchstart.stop="startResize($event, item.id, 'top-left')"
-          ></div>
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 512 512"
+              class="hidden group-hover/cursor:block cursor-none"
+            >
+              <g :fill="interactId === item.id ? 'green' : 'black'">
+                <path
+                  d="M504.3 273.6c4.9-4.5 7.7-10.9 7.7-17.6s-2.8-13-7.7-17.6l-112-104c-7-6.5-17.2-8.2-25.9-4.4s-14.4 12.5-14.4 22v56H160v-56c0-9.5-5.7-18.2-14.4-22s-18.9-2.1-25.9 4.4l-112 104C2.8 243 0 249.3 0 256s2.8 13 7.7 17.6l112 104c7 6.5 17.2 8.2 25.9 4.4s14.4-12.5 14.4-22v-56h192v56c0 9.5 5.7 18.2 14.4 22s18.9 2.1 25.9-4.4l112-104z"
+                />
+              </g>
+            </svg>
+          </div>
           <div
-            class="w-4 h-4 absolute bg-white/50 rounded-[50%] -bottom-1 -right-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none"
+            style="transform: rotate(45deg)"
+            class="resize_btn_bottom_right w-4 h-4 absolute bg-white/50 rounded-[50%] -bottom-1 -right-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none group/cursor"
             :class="{ 'opacity-100': interactId === item.id }"
-            :style="{
-              cursor: `url(${createRotatedCursor(item.rotation - 135, item.id)}) 8 8, auto`,
-            }"
             @mousedown.stop="startResize($event, item.id, 'bottom-right')"
             @touchstart.stop="startResize($event, item.id, 'bottom-right')"
-          ></div>
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 512 512"
+              class="hidden group-hover/cursor:block cursor-none"
+            >
+              <g :fill="interactId === item.id ? 'green' : 'black'">
+                <path
+                  d="M504.3 273.6c4.9-4.5 7.7-10.9 7.7-17.6s-2.8-13-7.7-17.6l-112-104c-7-6.5-17.2-8.2-25.9-4.4s-14.4 12.5-14.4 22v56H160v-56c0-9.5-5.7-18.2-14.4-22s-18.9-2.1-25.9 4.4l-112 104C2.8 243 0 249.3 0 256s2.8 13 7.7 17.6l112 104c7 6.5 17.2 8.2 25.9 4.4s14.4-12.5 14.4-22v-56h192v56c0 9.5 5.7 18.2 14.4 22s18.9 2.1 25.9-4.4l112-104z"
+                />
+              </g>
+            </svg>
+          </div>
           <div
-            class="w-4 h-4 absolute bg-white/50 rounded-[50%] -bottom-1 -left-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none"
+            style="transform: rotate(-45deg)"
+            class="resize_btn_bottom_left w-4 h-4 absolute bg-white/50 rounded-[50%] -bottom-1 -left-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none group/cursor"
             :class="{ 'opacity-100': interactId === item.id }"
-            :style="{
-              cursor: `url(${createRotatedCursor(item.rotation + 135, item.id)}) 8 8, auto`,
-            }"
             @mousedown.stop="startResize($event, item.id, 'bottom-left')"
             @touchstart.stop="startResize($event, item.id, 'bottom-left')"
-          ></div>
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 512 512"
+              class="hidden group-hover/cursor:block cursor-none"
+            >
+              <g :fill="interactId === item.id ? 'green' : 'black'">
+                <path
+                  d="M504.3 273.6c4.9-4.5 7.7-10.9 7.7-17.6s-2.8-13-7.7-17.6l-112-104c-7-6.5-17.2-8.2-25.9-4.4s-14.4 12.5-14.4 22v56H160v-56c0-9.5-5.7-18.2-14.4-22s-18.9-2.1-25.9 4.4l-112 104C2.8 243 0 249.3 0 256s2.8 13 7.7 17.6l112 104c7 6.5 17.2 8.2 25.9 4.4s14.4-12.5 14.4-22v-56h192v56c0 9.5 5.7 18.2 14.4 22s18.9 2.1 25.9-4.4l112-104z"
+                />
+              </g>
+            </svg>
+          </div>
         </div>
         <div
           v-if="isRotate && !isCtrl"
-          class="absolute top-0 flex w-full h-10 -translate-y-full group-hover:pointer-events-auto pointer-events-none"
+          class="rotate_btn absolute top-0 flex w-full h-10 -translate-y-full group-hover:pointer-events-auto pointer-events-none"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 512 512"
-            class="w-6 h-6 p-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none absolute bg-black rounded-[50%] cursor-pointer top-2 left-1/2 transform -translate-x-1/2"
+            class="rotate_btn_icon w-6 h-6 p-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none absolute bg-black rounded-[50%] cursor-pointer top-2 left-1/2 transform -translate-x-1/2"
             :class="[
               { 'opacity-100': interactId === item.id },
               interactId === item.id && isRotating ? 'fill-green-500' : 'fill-white',
@@ -120,9 +172,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onUnmounted, onMounted, nextTick, watch, type Ref } from 'vue'
+import {
+  ref,
+  onUnmounted,
+  onMounted,
+  nextTick,
+  type Ref,
+  reactive,
+  type Reactive,
+  computed,
+  watch,
+} from 'vue'
 import DOMPurify from 'dompurify'
-interface PropsDraggableItem {
+interface DraggableItem {
+  id?: number
+  name?: string
   html: string // HTML string to render
   x: number // X-coordinate for position
   y: number // Y-coordinate for position
@@ -131,38 +195,25 @@ interface PropsDraggableItem {
   rotation?: number
 }
 
-interface DraggableItem {
-  id: number
-  html: string // HTML string to render
-  x: number // X-coordinate for position
-  y: number // Y-coordinate for position
-  width: number
-  height: number
-  rotation: number
-  initialAngle: number
-  initialWidth: number
-  initialHeight: number
-}
-
 type ResizingHandle = 'top-right' | 'bottom-right' | 'top-left' | 'bottom-left'
 
 const props = withDefaults(
   defineProps<{
-    items?: PropsDraggableItem[]
     isDrag?: boolean
     isResize?: boolean
     isRotate?: boolean
     isCopy?: boolean
+    isMultiSelect?: boolean
     isDelete?: boolean
     throttleDelay?: number
     maxNumberOfItems?: number | undefined
     multiRotationMode?: 'proportional' | 'uniform' // "proportional" multirotation keep the based angle of item / "proportional" multirotation align items at the same angle"
   }>(),
   {
-    items: () => [],
     isDrag: true,
     isResize: false,
     isRotate: false,
+    isMultiSelect: true,
     isCopy: false,
     isDelete: false,
     throttleDelay: 1,
@@ -172,26 +223,23 @@ const props = withDefaults(
 )
 
 //COMMON
-const refItems: Ref<DraggableItem[]> = ref(
-  props.items
-    ?.map((item, idx) => ({
-      ...item,
-      id: idx,
-      width: item.width ?? 0,
-      height: item.height ?? 0,
-      rotation: item.rotation ?? 0,
-      initialAngle: 0, //Help for managing rotation
-      initialWidth: item.width ?? 0, //Help for managing resize
-      initialHeight: item.height ?? 0, //Help for managing resize
-    }))
-    ?.slice(0, props.maxNumberOfItems),
-)
+const items: Ref<DraggableItem[]> = defineModel({ default: [] })
+
+const initialValues: Reactive<{
+  [key: number]: {
+    initialAngle: number
+    initialWidth: number
+    initialHeight: number
+  }
+}> = reactive({})
 const ctrlSelectedItemsId: Ref<number[]> = ref([])
-const blockingCtrlInteractionX = ref(false)
-const firstBlockingCtrlInteractionXDone = ref(false)
-const blockingCtrlInteractionY = ref(false)
-const firstBlockingCtrlInteractionYDone = ref(false)
-const maxIdUsed = ref(props.items?.length - 1)
+const blockingLeftMulti = ref(false)
+const blockingRightMulti = ref(false)
+const blockingTopMulti = ref(false)
+const blockingBottomMulti = ref(false)
+const firstBlockingCtrlInteractionXDone: Ref<false | number> = ref(false)
+const firstBlockingCtrlInteractionYDone: Ref<false | number> = ref(false)
+const maxIdUsed = ref(1)
 const interactId = ref<number | null>(null)
 const isCtrl = ref(false)
 const isCtrlC = ref(false)
@@ -224,6 +272,25 @@ const emit = defineEmits([
 ])
 
 /**
+ * COMPUTED
+ */
+
+const displayedItems = computed(() =>
+  items.value
+    .map((item, key) => ({
+      ...item,
+      id: item.id ?? key + 1,
+      width: item.width ?? 0,
+      height: item.height ?? 0,
+      rotation: item.rotation ?? 0,
+    }))
+    ?.slice(0, props.maxNumberOfItems),
+)
+const noIdItems = computed(() => items.value.filter((item) => item.id === undefined))
+const noSizeItems = computed(() =>
+  items.value.filter((item) => item.width === undefined || item.height === undefined),
+)
+/**
  * METHODS
  */
 
@@ -239,50 +306,40 @@ const throttle = (func: (event: MouseEvent | TouchEvent) => void, delay: number)
   }
 }
 
-function createRotatedCursor(angle: number, id: number) {
-  const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 512 512">
-      <g transform="rotate(${angle}, 256, 256)" fill="${interactId.value === id ? 'green' : 'black'}">
-        <path d="M504.3 273.6c4.9-4.5 7.7-10.9 7.7-17.6s-2.8-13-7.7-17.6l-112-104c-7-6.5-17.2-8.2-25.9-4.4s-14.4 12.5-14.4 22v56H160v-56c0-9.5-5.7-18.2-14.4-22s-18.9-2.1-25.9 4.4l-112 104C2.8 243 0 249.3 0 256s2.8 13 7.7 17.6l112 104c7 6.5 17.2 8.2 25.9 4.4s14.4-12.5 14.4-22v-56h192v56c0 9.5 5.7 18.2 14.4 22s18.9 2.1 25.9-4.4l112-104z"/>
-      </g>
-    </svg>
-  `
-  return `data:image/svg+xml;base64,${btoa(svg)}`
-}
-
 const calculateMenuPos = (id: number) => {
-  const item = refItems.value.find((item) => item.id === id)
+  const item = items.value.find((item) => item.id === id)
   const playground = document.querySelector('.vue-drag-playground')
 
   if (playground && item) {
     const playgroundBounds = playground.getBoundingClientRect()
-
-    if (item.x + item.width + 75 > playgroundBounds.width) {
+    const widthItem = item.width ?? 0
+    const heightItem = item.height ?? 0
+    if (item.x + widthItem + 75 > playgroundBounds.width) {
       if (item.y > 70) {
         return {
           top: '-60px',
-          paddingBottom: `${item.height + 40}px`,
-          paddingRight: `${item.width - 40}px`,
+          paddingBottom: `${heightItem + 40}px`,
+          paddingRight: `${widthItem - 40}px`,
         }
       } else {
         return {
           bottom: '-60px',
-          paddingTop: `${item.height + 40}px`,
-          paddingRight: `${item.width - 40}px`,
+          paddingTop: `${heightItem + 40}px`,
+          paddingRight: `${widthItem - 40}px`,
         }
       }
     } else {
       if (item.y > 70) {
         return {
-          paddingLeft: `${item.width + 30}px`,
+          paddingLeft: `${widthItem + 30}px`,
           top: '-28px',
-          paddingBottom: `${item.height + 10}px`,
+          paddingBottom: `${heightItem + 10}px`,
         }
       } else {
         return {
-          paddingLeft: `${item.width + 30}px`,
+          paddingLeft: `${widthItem + 30}px`,
           bottom: '-28px',
-          paddingTop: `${item.height + 10}px`,
+          paddingTop: `${heightItem + 10}px`,
         }
       }
     }
@@ -291,18 +348,21 @@ const calculateMenuPos = (id: number) => {
 }
 
 const handleKeyDown = (event: KeyboardEvent) => {
-  if (isCtrl.value) {
-    if (event.key === 'c') {
-      // Copy logic
-      isCtrlC.value = true
-    } else if (isCtrlC.value && event.key === 'v') {
-      // Paste logic
-      ctrlSelectedItemsId.value.forEach((id) => copyItem(id))
-    } else if (event.key === 'Delete' || event.key === 'Backspace') {
-      ctrlSelectedItemsId.value.forEach((id) => deleteItem(id))
+  if (props.isMultiSelect) {
+    if (isCtrl.value) {
+      if (event.key === 'c') {
+        // Copy logic
+        isCtrlC.value = true
+      } else if (isCtrlC.value && event.key === 'v') {
+        // Paste logic
+        ctrlSelectedItemsId.value.forEach((id) => copyItem(id))
+      } else if (event.key === 'Delete' || event.key === 'Backspace') {
+        ctrlSelectedItemsId.value.forEach((id) => deleteItem(id))
+        ctrlSelectedItemsId.value = []
+      }
+    } else {
+      isCtrl.value = event.key === 'Control' || event.key === 'Meta'
     }
-  } else {
-    isCtrl.value = event.key === 'Control' || event.key === 'Meta'
   }
 }
 
@@ -320,13 +380,13 @@ const handleClickPlayground = () => {
 
 //COPY
 const copyItem = (id: number) => {
-  if (props.isCopy && (!props.maxNumberOfItems || props.maxNumberOfItems > refItems.value.length)) {
+  if (props.isCopy && (!props.maxNumberOfItems || props.maxNumberOfItems > items.value.length)) {
     const playground = document.querySelector('.vue-drag-playground')
-    const item = refItems.value.find((item) => item.id === id)
+    const item = items.value.find((item) => item.id === id)
     if (item && playground) {
       const rotation = ((item.rotation ?? 0) * Math.PI) / 180
-      const halfWidth = item.width / 2
-      const halfHeight = item.height / 2
+      const halfWidth = (item.width ?? 0) / 2
+      const halfHeight = (item.height ?? 0) / 2
       // Calculate rotated corners relative to the center
       const corners = [
         { x: -halfWidth, y: -halfHeight }, // Top-left
@@ -342,16 +402,21 @@ const copyItem = (id: number) => {
       const maxX = Math.max(...corners.map((corner) => corner.x))
       const maxY = Math.max(...corners.map((corner) => corner.y))
       const playgroundBounds = playground.getBoundingClientRect()
+      maxIdUsed.value += 1
       // Create a shallow copy of the item properties, adjust position slightly to avoid overlap
       const newItem = {
         ...item,
         x: maxX + 20 < playgroundBounds.width ? item.x + 20 : item.x - 20, // Adjust x position to prevent overlap
         y: maxY + 20 < playgroundBounds.height ? item.y + 20 : item.y - 20, // Adjust y position to prevent overlap
         html: item.html, // Preserve HTML content
-        id: maxIdUsed.value + 1,
+        id: maxIdUsed.value,
       }
-      refItems.value.push(newItem) // Add the copied item to the list
-      maxIdUsed.value += 1
+      items.value.push(newItem) // Add the copied item to the list
+      initialValues[newItem.id] = {
+        initialAngle: 0, //Help for managing rotation
+        initialWidth: item.width ?? 0, //Help for managing resize
+        initialHeight: item.height ?? 0, //Help for managing resize
+      }
     }
   }
 }
@@ -359,7 +424,10 @@ const copyItem = (id: number) => {
 //DELETE
 const deleteItem = (id: number) => {
   if (props.isDelete) {
-    refItems.value = refItems.value.filter((item) => item.id !== id)
+    items.value.splice(
+      items.value.findIndex((item) => item.id === id),
+      1,
+    )
     interactId.value = null
   }
 }
@@ -376,40 +444,25 @@ const handleClickItem = (id: number) => {
 }
 
 //RESIZE
-const transformHtmlItem = (item: DraggableItem) => {
-  const tempDiv = document.createElement('div')
-  tempDiv.innerHTML = DOMPurify.sanitize(item.html)
-  const child = tempDiv.children?.[0]
-  if (child) {
-    const currentStyles = child.getAttribute('style') || ''
-    // Parse current styles into a map
-    const stylesMap = new Map(
-      currentStyles
-        .split(';')
-        .map((style) => {
-          const [key, value] = style.split(':').map((s) => s.trim())
-          return key && value ? [key, value] : null
-        })
-        .filter(Boolean) as [string, string][],
-    )
-
-    // Add computed styles for fallback (if needed)
-    if (item.width) stylesMap.set('width', `${item.width}px`)
-    if (item.height) stylesMap.set('height', `${item.height}px`)
-    // Reconstruct the style string
-    const updatedStyleString = Array.from(stylesMap)
-      .map(([key, value]) => `${key}: ${value}`)
-      .join('; ')
-    child.setAttribute('style', updatedStyleString)
-    return child.outerHTML
-  }
-  return ''
+const applyStyleSizeItems = () => {
+  items.value.forEach((item) => {
+    if (item.id !== undefined) {
+      const itemEl = document.querySelector(`.item-${item.id}`)
+      if (itemEl) {
+        const child = itemEl.children?.[0] as HTMLElement
+        if (child) {
+          if (item.width) child.style.width = `${item.width}px`
+          if (item.height) child.style.height = `${item.height}px`
+        }
+      }
+    }
+  })
 }
 const startResize = (event: MouseEvent | TouchEvent, id: number, handle: ResizingHandle) => {
   if (props.isResize && !isCtrl.value) {
-    const item = refItems.value.find((item) => item.id === id)
+    const item = items.value.find((item) => item.id === id)
     const itemEl = document.querySelector(`.item-${id}`)
-    if (itemEl && item) {
+    if (itemEl && item && item.id !== undefined) {
       emit('resize-start', item, handle)
       interactId.value = id
       resizingHandle.value = handle
@@ -418,15 +471,15 @@ const startResize = (event: MouseEvent | TouchEvent, id: number, handle: Resizin
       initialMouseY.value = isTouch ? event.touches[0].clientY : event.clientY
       if (ctrlSelectedItemsId.value?.length > 0 && ctrlSelectedItemsId.value.includes(id)) {
         ctrlSelectedItemsId.value.forEach((localId) => {
-          const ctrlItem = refItems.value.find((refItem) => refItem.id === localId)
+          const ctrlItem = items.value.find((refItem) => refItem.id === localId)
           if (ctrlItem) {
-            ctrlItem.initialWidth = ctrlItem.width
-            ctrlItem.initialHeight = ctrlItem.height
+            initialValues[localId].initialWidth = ctrlItem.width ?? 0
+            initialValues[localId].initialHeight = ctrlItem.height ?? 0
           }
         })
       } else {
-        item.initialWidth = item.width
-        item.initialHeight = item.height
+        initialValues[id].initialWidth = item.width ?? 0
+        initialValues[id].initialHeight = item.height ?? 0
       }
       document.addEventListener(isTouch ? 'touchmove' : 'mousemove', onResize)
       document.addEventListener(isTouch ? 'touchend' : 'mouseup', stopResize)
@@ -439,9 +492,10 @@ const clamp = (value: number, min: number, max: number) => {
 }
 
 const onResize = throttle((event: MouseEvent | TouchEvent) => {
+  //TODO fix multi resize with items rotate in oposite angles
   event.stopPropagation()
   const playground = document.querySelector('.vue-drag-playground')
-  const item = refItems.value.find((item) => item.id === interactId.value)
+  const item = items.value.find((item) => item.id === interactId.value)
   if (!playground || !item || interactId.value === null || resizingHandle.value === null) return
 
   const playgroundBounds = playground.getBoundingClientRect()
@@ -452,9 +506,13 @@ const onResize = throttle((event: MouseEvent | TouchEvent) => {
 
   const dx = clientX - initialMouseX.value
   const dy = clientY - initialMouseY.value
-  if (ctrlSelectedItemsId.value?.length > 0 && ctrlSelectedItemsId.value.includes(item.id)) {
+  if (
+    ctrlSelectedItemsId.value?.length > 0 &&
+    item.id !== undefined &&
+    ctrlSelectedItemsId.value.includes(item.id)
+  ) {
     ctrlSelectedItemsId.value.forEach((localId) => {
-      const ctrlItem = refItems.value.find((refItem) => refItem.id === localId)
+      const ctrlItem = items.value.find((refItem) => refItem.id === localId)
       if (ctrlItem) {
         updateResizeItem(ctrlItem, dx, dy, playgroundBounds)
       }
@@ -475,10 +533,12 @@ const updateResizeItem = (
   const cos = Math.cos(rotation)
   const sin = Math.sin(rotation)
 
-  const halfWidth = item.width / 2
-  const halfHeight = item.height / 2
-  const centerX = item.x + item.width / 2
-  const centerY = item.y + item.height / 2
+  const itemWidth = item.width ?? 0
+  const itemHeight = item.height ?? 0
+  const halfWidth = itemWidth / 2
+  const halfHeight = itemHeight / 2
+  const centerX = item.x + itemWidth / 2
+  const centerY = item.y + itemHeight / 2
 
   // Calculate corners relative to the center
   const corners = [
@@ -494,8 +554,8 @@ const updateResizeItem = (
 
   const rotatedDx = dx * cos + dy * sin
   const rotatedDy = dy * cos - dx * sin
-  let newWidth = item.width
-  let newHeight = item.height
+  let newWidth = item.width ?? 0
+  let newHeight = item.height ?? 0
   let newX = item.x
   let newY = item.y
 
@@ -503,100 +563,102 @@ const updateResizeItem = (
   let fixedCorner // This will hold the position of the fixed corner
   let newCenterX: number = 0,
     newCenterY: number = 0
+  if (item.id !== undefined) {
+    const initialValuesItem = initialValues[item.id]
+    switch (resizingHandle.value) {
+      case 'bottom-right': {
+        fixedCorner = corners[0] // Top-left
+        newWidth = clamp(initialValuesItem.initialWidth + rotatedDx, 10, playgroundBounds.width)
+        newHeight = clamp(initialValuesItem.initialHeight + rotatedDy, 10, playgroundBounds.height)
 
-  switch (resizingHandle.value) {
-    case 'bottom-right': {
-      fixedCorner = corners[0] // Top-left
-      newWidth = clamp(item.initialWidth + rotatedDx, 10, playgroundBounds.width)
-      newHeight = clamp(item.initialHeight + rotatedDy, 10, playgroundBounds.height)
+        // Calculate the new center based on the fixed corner
+        newCenterX = fixedCorner.x + (newWidth * cos) / 2 - (newHeight * sin) / 2
+        newCenterY = fixedCorner.y + (newWidth * sin) / 2 + (newHeight * cos) / 2
+        break
+      }
+      case 'bottom-left': {
+        fixedCorner = corners[1] // Top-right
+        newWidth = clamp(initialValuesItem.initialWidth - rotatedDx, 10, playgroundBounds.width)
+        newHeight = clamp(initialValuesItem.initialHeight + rotatedDy, 10, playgroundBounds.height)
 
-      // Calculate the new center based on the fixed corner
-      newCenterX = fixedCorner.x + (newWidth * cos) / 2 - (newHeight * sin) / 2
-      newCenterY = fixedCorner.y + (newWidth * sin) / 2 + (newHeight * cos) / 2
-      break
+        // Calculate the new center based on the fixed corner
+        newCenterX = fixedCorner.x - (newWidth * cos) / 2 - (newHeight * sin) / 2
+        newCenterY = fixedCorner.y - (newWidth * sin) / 2 + (newHeight * cos) / 2
+        break
+      }
+      case 'top-right': {
+        fixedCorner = corners[3] // Bottom-left
+        newWidth = clamp(initialValuesItem.initialWidth + rotatedDx, 10, playgroundBounds.width)
+        newHeight = clamp(initialValuesItem.initialHeight - rotatedDy, 10, playgroundBounds.height)
+
+        // Calculate the new center based on the fixed corner
+        newCenterX = fixedCorner.x + (newWidth * cos) / 2 + (newHeight * sin) / 2
+        newCenterY = fixedCorner.y + (newWidth * sin) / 2 - (newHeight * cos) / 2
+        break
+      }
+      case 'top-left': {
+        fixedCorner = corners[2] // Bottom-right
+        newWidth = clamp(initialValuesItem.initialWidth - rotatedDx, 10, playgroundBounds.width)
+        newHeight = clamp(initialValuesItem.initialHeight - rotatedDy, 10, playgroundBounds.height)
+
+        // Calculate the new center based on the fixed corner
+        newCenterX = fixedCorner.x - (newWidth * cos) / 2 + (newHeight * sin) / 2
+        newCenterY = fixedCorner.y - (newWidth * sin) / 2 - (newHeight * cos) / 2
+        break
+      }
     }
-    case 'bottom-left': {
-      fixedCorner = corners[1] // Top-right
-      newWidth = clamp(item.initialWidth - rotatedDx, 10, playgroundBounds.width)
-      newHeight = clamp(item.initialHeight + rotatedDy, 10, playgroundBounds.height)
 
-      // Calculate the new center based on the fixed corner
-      newCenterX = fixedCorner.x - (newWidth * cos) / 2 - (newHeight * sin) / 2
-      newCenterY = fixedCorner.y - (newWidth * sin) / 2 + (newHeight * cos) / 2
-      break
+    // Calculate the new top-left position based on the new center
+    newX = newCenterX - newWidth / 2
+    newY = newCenterY - newHeight / 2
+
+    // Ensure the item stays within bounds considering rotation
+    const newCorners = [
+      { x: -newWidth / 2, y: -newHeight / 2 }, // New Top-left
+      { x: newWidth / 2, y: -newHeight / 2 }, // New Top-right
+      { x: newWidth / 2, y: newHeight / 2 }, // New Bottom-right
+      { x: -newWidth / 2, y: newHeight / 2 }, // New Bottom-left
+    ].map((corner) => ({
+      x: newCenterX + corner.x * cos - corner.y * sin,
+      y: newCenterY + corner.x * sin + corner.y * cos,
+    }))
+
+    const minX = Math.min(...newCorners.map((corner) => corner.x))
+    const maxX = Math.max(...newCorners.map((corner) => corner.x))
+    const minY = Math.min(...newCorners.map((corner) => corner.y))
+    const maxY = Math.max(...newCorners.map((corner) => corner.y))
+
+    let counterCornerBorder = 0
+    if (minX < 0) {
+      newX -= minX
+      counterCornerBorder += 1
     }
-    case 'top-right': {
-      fixedCorner = corners[3] // Bottom-left
-      newWidth = clamp(item.initialWidth + rotatedDx, 10, playgroundBounds.width)
-      newHeight = clamp(item.initialHeight - rotatedDy, 10, playgroundBounds.height)
-
-      // Calculate the new center based on the fixed corner
-      newCenterX = fixedCorner.x + (newWidth * cos) / 2 + (newHeight * sin) / 2
-      newCenterY = fixedCorner.y + (newWidth * sin) / 2 - (newHeight * cos) / 2
-      break
+    if (minY < 0) {
+      newY -= minY
+      counterCornerBorder += 1
     }
-    case 'top-left': {
-      fixedCorner = corners[2] // Bottom-right
-      newWidth = clamp(item.initialWidth - rotatedDx, 10, playgroundBounds.width)
-      newHeight = clamp(item.initialHeight - rotatedDy, 10, playgroundBounds.height)
-
-      // Calculate the new center based on the fixed corner
-      newCenterX = fixedCorner.x - (newWidth * cos) / 2 + (newHeight * sin) / 2
-      newCenterY = fixedCorner.y - (newWidth * sin) / 2 - (newHeight * cos) / 2
-      break
+    if (maxX > playgroundBounds.width) {
+      newX -= maxX - playgroundBounds.width
+      counterCornerBorder += 1
     }
+    if (maxY > playgroundBounds.height) {
+      newY -= maxY - playgroundBounds.height
+      counterCornerBorder += 1
+    }
+    if (counterCornerBorder >= 2) return
+
+    // Apply the calculated size and position
+    item.width = newWidth
+    item.height = newHeight
+    item.x = newX
+    item.y = newY
+
+    emit('resizing', item)
   }
-
-  // Calculate the new top-left position based on the new center
-  newX = newCenterX - newWidth / 2
-  newY = newCenterY - newHeight / 2
-
-  // Ensure the item stays within bounds considering rotation
-  const newCorners = [
-    { x: -newWidth / 2, y: -newHeight / 2 }, // New Top-left
-    { x: newWidth / 2, y: -newHeight / 2 }, // New Top-right
-    { x: newWidth / 2, y: newHeight / 2 }, // New Bottom-right
-    { x: -newWidth / 2, y: newHeight / 2 }, // New Bottom-left
-  ].map((corner) => ({
-    x: newCenterX + corner.x * cos - corner.y * sin,
-    y: newCenterY + corner.x * sin + corner.y * cos,
-  }))
-
-  const minX = Math.min(...newCorners.map((corner) => corner.x))
-  const maxX = Math.max(...newCorners.map((corner) => corner.x))
-  const minY = Math.min(...newCorners.map((corner) => corner.y))
-  const maxY = Math.max(...newCorners.map((corner) => corner.y))
-
-  let counterCornerBorder = 0
-  if (minX < 0) {
-    newX -= minX
-    counterCornerBorder += 1
-  }
-  if (minY < 0) {
-    newY -= minY
-    counterCornerBorder += 1
-  }
-  if (maxX > playgroundBounds.width) {
-    newX -= maxX - playgroundBounds.width
-    counterCornerBorder += 1
-  }
-  if (maxY > playgroundBounds.height) {
-    newY -= maxY - playgroundBounds.height
-    counterCornerBorder += 1
-  }
-  if (counterCornerBorder >= 2) return
-
-  // Apply the calculated size and position
-  item.width = newWidth
-  item.height = newHeight
-  item.x = newX
-  item.y = newY
-
-  emit('resizing', item)
 }
 
 const stopResize = () => {
-  const item = refItems.value.find((item) => item.id === interactId.value)
+  const item = items.value.find((item) => item.id === interactId.value)
   emit('resize-end', item)
   interactId.value = null
   document.removeEventListener('mousemove', onResize)
@@ -608,9 +670,9 @@ const stopResize = () => {
 //ROTATE
 const startRotate = (event: MouseEvent | TouchEvent, id: number) => {
   if (props.isRotate && !isCtrl.value) {
-    const item = refItems.value.find((item) => item.id === id)
+    const item = items.value.find((item) => item.id === id)
     const itemEl = document.querySelector(`.item-${id}`)
-    if (itemEl && item) {
+    if (itemEl && item && item.id !== undefined) {
       interactId.value = id
       isRotating.value = true
       // Calculate the center of the element
@@ -626,13 +688,16 @@ const startRotate = (event: MouseEvent | TouchEvent, id: number) => {
 
       if (ctrlSelectedItemsId.value?.length > 0 && ctrlSelectedItemsId.value.includes(id)) {
         ctrlSelectedItemsId.value.forEach((localId) => {
-          const ctrlItem = refItems.value.find((refItem) => refItem.id === localId)
-          if (ctrlItem) {
-            ctrlItem.initialAngle = Math.atan2(dy, dx) * (180 / Math.PI) - (ctrlItem.rotation ?? 0)
+          const ctrlItem = items.value.find((refItem) => refItem.id === localId)
+          if (ctrlItem && ctrlItem.id !== undefined) {
+            const initialValuesItem = initialValues[ctrlItem.id]
+            initialValuesItem.initialAngle =
+              Math.atan2(dy, dx) * (180 / Math.PI) - (ctrlItem.rotation ?? 0)
           }
         })
       } else {
-        item.initialAngle = Math.atan2(dy, dx) * (180 / Math.PI) - (item.rotation ?? 0)
+        const initialValuesItem = initialValues[item.id]
+        initialValuesItem.initialAngle = Math.atan2(dy, dx) * (180 / Math.PI) - (item.rotation ?? 0)
       }
 
       // Add global listeners for rotation
@@ -647,9 +712,9 @@ const onRotate = throttle((event: MouseEvent | TouchEvent) => {
   event.stopPropagation()
 
   const playground = document.querySelector('.vue-drag-playground')
-  const item = refItems.value.find((item) => item.id === interactId.value)
+  const item = items.value.find((item) => item.id === interactId.value)
 
-  if (!playground || !item || interactId.value === null) return
+  if (!playground || !item || item.id === undefined || interactId.value === null) return
   const playgroundBounds = playground.getBoundingClientRect()
 
   const isTouch = event instanceof TouchEvent
@@ -659,13 +724,19 @@ const onRotate = throttle((event: MouseEvent | TouchEvent) => {
   const dx = clientX - centerX.value
   const dy = clientY - centerY.value
   const angle = Math.atan2(dy, dx) * (180 / Math.PI)
-  const rotation = angle - item.initialAngle
-  if (ctrlSelectedItemsId.value?.length > 0 && ctrlSelectedItemsId.value.includes(item.id)) {
+  const initialValuesItem = initialValues[item.id]
+  const rotation = angle - initialValuesItem.initialAngle
+  if (
+    ctrlSelectedItemsId.value?.length > 0 &&
+    item.id !== undefined &&
+    ctrlSelectedItemsId.value.includes(item.id)
+  ) {
     ctrlSelectedItemsId.value.forEach((localId) => {
-      const ctrlItem = refItems.value.find((refItem) => refItem.id === localId)
-      if (ctrlItem) {
+      const ctrlItem = items.value.find((refItem) => refItem.id === localId)
+      if (ctrlItem && ctrlItem.id !== undefined) {
+        const initialValuesItem = initialValues[ctrlItem.id]
         const ctrlItemRotation =
-          props.multiRotationMode === 'uniform' ? rotation : angle - ctrlItem.initialAngle
+          props.multiRotationMode === 'uniform' ? rotation : angle - initialValuesItem.initialAngle
         updateRotationItem(ctrlItem, ctrlItemRotation, playgroundBounds)
       }
     })
@@ -679,8 +750,8 @@ const updateRotationItem = (item: DraggableItem, rotation: number, playgroundBou
   const cos = Math.cos(newRotation)
   const sin = Math.sin(newRotation)
 
-  const halfWidth = item.width / 2
-  const halfHeight = item.height / 2
+  const halfWidth = (item.width ?? 0) / 2
+  const halfHeight = (item.height ?? 0) / 2
 
   // Ensure the item stays within bounds considering rotation
   const newCorners = [
@@ -706,7 +777,7 @@ const updateRotationItem = (item: DraggableItem, rotation: number, playgroundBou
 }
 
 const stopRotate = () => {
-  const item = refItems.value.find((item) => item.id === interactId.value)
+  const item = items.value.find((item) => item.id === interactId.value)
   emit('rotation-end', item)
   interactId.value = null
   isRotating.value = false
@@ -721,7 +792,7 @@ const stopRotate = () => {
 //DRAG
 const startDrag = (event: MouseEvent | TouchEvent, id: number) => {
   if (props.isDrag && !isCtrl.value) {
-    const item = refItems.value.find((item) => item.id === id)
+    const item = items.value.find((item) => item.id === id)
     if (item) {
       emit('drag-start', item)
       interactId.value = id
@@ -740,7 +811,7 @@ const startDrag = (event: MouseEvent | TouchEvent, id: number) => {
 const onDrag = throttle((event: MouseEvent | TouchEvent) => {
   event.stopPropagation()
   const playground = document.querySelector('.vue-drag-playground')
-  const item = refItems.value.find((item) => item.id === interactId.value)
+  const item = items.value.find((item) => item.id === interactId.value)
 
   if (!playground || !item || interactId.value === null || currentDragEl.value === null) return
 
@@ -753,48 +824,152 @@ const onDrag = throttle((event: MouseEvent | TouchEvent) => {
 
   const newX = clientX - offsetX.value
   const newY = clientY - offsetY.value
-  if (ctrlSelectedItemsId.value?.length > 0 && ctrlSelectedItemsId.value.includes(item.id)) {
-    const newPosCtrlItems: { [key: number]: { calcX: number; calcY: number } } = {}
+  if (
+    ctrlSelectedItemsId.value?.length > 0 &&
+    item.id !== undefined &&
+    ctrlSelectedItemsId.value.includes(item.id)
+  ) {
+    const newPosCtrlItems: {
+      [key: number]: {
+        calcX: number
+        calcY: number
+        minX: number
+        minY: number
+        maxX: number
+        maxY: number
+      }
+    } = {}
     ctrlSelectedItemsId.value.forEach((localId) => {
-      const ctrlItem = refItems.value.find((refItem) => refItem.id === localId)
-      if (ctrlItem) {
-        const { x: calcX, y: calcY } = calculateDragItemNewPos(
+      const ctrlItem = items.value.find((refItem) => refItem.id === localId)
+      if (ctrlItem && ctrlItem.id !== undefined) {
+        const {
+          x: calcX,
+          y: calcY,
+          minX,
+          minY,
+          maxX,
+          maxY,
+        } = calculateDragItemNewPos(
           ctrlItem,
           ctrlItem.x + newX - item.x,
           ctrlItem.y + newY - item.y,
           playgroundBounds,
           true,
         )
-        newPosCtrlItems[ctrlItem.id] = { calcX, calcY }
+        newPosCtrlItems[ctrlItem.id] = { calcX, calcY, minX, minY, maxX, maxY }
       }
     })
-    if (blockingCtrlInteractionX.value || blockingCtrlInteractionY.value) {
+    if (
+      blockingLeftMulti.value ||
+      blockingRightMulti.value ||
+      blockingBottomMulti.value ||
+      blockingTopMulti.value
+    ) {
+      let blockingXIndex: number | false = false
+      let blockingYIndex: number | false = false
+      if (firstBlockingCtrlInteractionXDone.value) {
+        if (blockingLeftMulti.value || blockingRightMulti.value) {
+          blockingXIndex = firstBlockingCtrlInteractionXDone.value
+        } else {
+          firstBlockingCtrlInteractionXDone.value = false
+        }
+      } else {
+        if (blockingLeftMulti.value) {
+          const indexString = Object.entries(newPosCtrlItems).reduce<
+            [string | null, { minX: number }]
+          >(
+            (min, [key, value]) => {
+              return value.minX < min[1].minX ? [key, value] : min
+            },
+            [null, { minX: Infinity }], // Initial value
+          )[0]
+          blockingXIndex = indexString ? parseInt(indexString) : false
+          firstBlockingCtrlInteractionXDone.value = blockingXIndex
+        } else if (blockingRightMulti.value) {
+          const indexString = Object.entries(newPosCtrlItems).reduce<
+            [string | null, { maxX: number }]
+          >(
+            (max, [key, value]) => {
+              return value.maxX > max[1].maxX ? [key, value] : max
+            },
+            [null, { maxX: -Infinity }], // Initial value
+          )[0]
+          blockingXIndex = indexString ? parseInt(indexString) : false
+          firstBlockingCtrlInteractionXDone.value = blockingXIndex
+        } else {
+          firstBlockingCtrlInteractionXDone.value = false
+        }
+      }
+
+      if (firstBlockingCtrlInteractionYDone.value) {
+        if (blockingTopMulti.value || blockingBottomMulti.value) {
+          blockingYIndex = firstBlockingCtrlInteractionYDone.value
+        } else {
+          firstBlockingCtrlInteractionYDone.value = false
+        }
+      } else {
+        if (blockingTopMulti.value) {
+          const indexString = Object.entries(newPosCtrlItems).reduce<
+            [string | null, { minY: number }]
+          >(
+            (min, [key, value]) => {
+              return value.minY < min[1].minY ? [key, value] : min
+            },
+            [null, { minY: Infinity }], // Initial value
+          )[0]
+          blockingYIndex = indexString ? parseInt(indexString) : false
+          firstBlockingCtrlInteractionYDone.value = blockingYIndex
+        } else if (blockingBottomMulti.value) {
+          const indexString = Object.entries(newPosCtrlItems).reduce<
+            [string | null, { maxY: number }]
+          >(
+            (max, [key, value]) => {
+              return value.maxY > max[1].maxY ? [key, value] : max
+            },
+            [null, { maxY: -Infinity }], // Initial value
+          )[0]
+          blockingYIndex = indexString ? parseInt(indexString) : false
+          firstBlockingCtrlInteractionYDone.value = blockingYIndex
+        } else {
+          firstBlockingCtrlInteractionYDone.value = false
+        }
+      }
+      const dXBlocking = blockingXIndex
+        ? newPosCtrlItems[blockingXIndex].calcX -
+          (items.value.find((refItem) => refItem.id === blockingXIndex)?.x ?? 0)
+        : 0
+      const dYBlocking = blockingYIndex
+        ? newPosCtrlItems[blockingYIndex].calcY -
+          (items.value.find((refItem) => refItem.id === blockingYIndex)?.y ?? 0)
+        : 0
       ctrlSelectedItemsId.value.forEach((localId) => {
-        const ctrlItem = refItems.value.find((refItem) => refItem.id === localId)
-        if (ctrlItem) {
+        const ctrlItem = items.value.find((refItem) => refItem.id === localId)
+        if (ctrlItem && ctrlItem.id !== undefined) {
           ctrlItem.x =
-            blockingCtrlInteractionX.value && firstBlockingCtrlInteractionXDone.value
-              ? ctrlItem.x
+            blockingXIndex && blockingXIndex !== ctrlItem.id
+              ? ctrlItem.x + dXBlocking
               : newPosCtrlItems[ctrlItem.id].calcX
           ctrlItem.y =
-            blockingCtrlInteractionY.value && firstBlockingCtrlInteractionYDone.value
-              ? ctrlItem.y
+            blockingYIndex && blockingYIndex !== ctrlItem.id
+              ? ctrlItem.y + dYBlocking
               : newPosCtrlItems[ctrlItem.id].calcY
         }
-        firstBlockingCtrlInteractionXDone.value = blockingCtrlInteractionX.value
-        firstBlockingCtrlInteractionYDone.value = blockingCtrlInteractionY.value
       })
     } else {
       ctrlSelectedItemsId.value.forEach((localId) => {
-        const ctrlItem = refItems.value.find((refItem) => refItem.id === localId)
-        if (ctrlItem) {
+        const ctrlItem = items.value.find((refItem) => refItem.id === localId)
+        if (ctrlItem && ctrlItem.id !== undefined) {
           ctrlItem.x = newPosCtrlItems[ctrlItem.id].calcX
           ctrlItem.y = newPosCtrlItems[ctrlItem.id].calcY
         }
       })
+      firstBlockingCtrlInteractionXDone.value = false
+      firstBlockingCtrlInteractionYDone.value = false
     }
-    blockingCtrlInteractionX.value = false
-    blockingCtrlInteractionY.value = false
+    blockingLeftMulti.value = false
+    blockingRightMulti.value = false
+    blockingBottomMulti.value = false
+    blockingTopMulti.value = false
   } else {
     const { x: calcX, y: calcY } = calculateDragItemNewPos(
       item,
@@ -816,8 +991,8 @@ const calculateDragItemNewPos = (
   isMultipleDrag: boolean,
 ) => {
   const rotation = ((item.rotation ?? 0) * Math.PI) / 180
-  const halfWidth = item.width / 2
-  const halfHeight = item.height / 2
+  const halfWidth = (item.width ?? 0) / 2
+  const halfHeight = (item.height ?? 0) / 2
 
   // Calculate rotated corners relative to the center
   const corners = [
@@ -826,44 +1001,50 @@ const calculateDragItemNewPos = (
     { x: halfWidth, y: halfHeight }, // Bottom-right
     { x: -halfWidth, y: halfHeight }, // Bottom-left
   ].map((corner) => ({
-    x: corner.x * Math.cos(rotation) - corner.y * Math.sin(rotation),
-    y: corner.x * Math.sin(rotation) + corner.y * Math.cos(rotation),
+    x: corner.x * Math.cos(rotation) - corner.y * Math.sin(rotation) + item.x + halfWidth,
+    y: corner.x * Math.sin(rotation) + corner.y * Math.cos(rotation) + item.y + halfHeight,
   }))
 
   // Get maximum offsets caused by rotation
+  const minX = Math.min(...corners.map((corner) => corner.x))
   const maxX = Math.max(...corners.map((corner) => corner.x))
+  const minY = Math.min(...corners.map((corner) => corner.y))
   const maxY = Math.max(...corners.map((corner) => corner.y))
 
-  let x, y
+  // Calculate new position clamped to the boundaries
+  let clampedX = newX
+  let clampedY = newY
 
-  if (newX < 0 - halfWidth + maxX) {
-    x = 0 - halfWidth + maxX
-    blockingCtrlInteractionX.value = isMultipleDrag
-  } else if (newX > playgroundBounds.width - (halfWidth + maxX)) {
-    x = playgroundBounds.width - (halfWidth + maxX)
-    blockingCtrlInteractionX.value = isMultipleDrag
-  } else {
-    x = newX
+  // Clamp the x-coordinate
+  if (minX + (newX - item.x) < 0) {
+    clampedX = item.x + (0 - minX) // Align to left boundary
+    blockingLeftMulti.value = isMultipleDrag
+  } else if (maxX + (newX - item.x) > playgroundBounds.width) {
+    clampedX = item.x + (playgroundBounds.width - maxX) // Align to right boundary
+    blockingRightMulti.value = isMultipleDrag
   }
 
-  // For y coordinate
-  if (newY < 0 - halfHeight + maxY) {
-    y = 0 - halfHeight + maxY
-    blockingCtrlInteractionY.value = isMultipleDrag
-  } else if (newY > playgroundBounds.height - (halfHeight + maxY)) {
-    y = playgroundBounds.height - (halfHeight + maxY)
-    blockingCtrlInteractionY.value = isMultipleDrag
-  } else {
-    y = newY
+  // Clamp the y-coordinate
+  if (minY + (newY - item.y) < 0) {
+    clampedY = item.y + (0 - minY) // Align to top boundary
+    blockingTopMulti.value = isMultipleDrag
+  } else if (maxY + (newY - item.y) > playgroundBounds.height) {
+    clampedY = item.y + (playgroundBounds.height - maxY) // Align to bottom boundary
+    blockingBottomMulti.value = isMultipleDrag
   }
-  // Update the item's position with clamping
+
+  // Update the item's position with precise boundary alignment
   return {
-    x,
-    y,
+    x: clampedX,
+    y: clampedY,
+    minX,
+    maxX,
+    minY,
+    maxY,
   }
 }
 const stopDrag = () => {
-  const item = refItems.value.find((item) => item.id === interactId.value)
+  const item = items.value.find((item) => item.id === interactId.value)
   emit('drag-end', item)
   interactId.value = null
   // Remove global listeners
@@ -877,11 +1058,12 @@ const initItems = () => {
   const playground = document.querySelector('.vue-drag-playground')
   if (playground) {
     const playgroundBounds = playground.getBoundingClientRect()
-    refItems.value?.map((item) => {
+    items.value?.map((item) => {
       const itemEl = document.querySelector(`.item-${item.id}`)
-      if (itemEl) {
-        item.width = itemEl.clientWidth
-        item.height = itemEl.clientHeight
+      const bounds = itemEl?.getBoundingClientRect()
+      if (itemEl && bounds) {
+        item.width = item.width ? item.width : bounds.width
+        item.height = item.height ? item.height : bounds.height
         const { x: calcX, y: calcY } = calculateDragItemNewPos(
           item,
           item.x,
@@ -898,12 +1080,24 @@ const initItems = () => {
 
 //LIFECYCLE
 onMounted(() => {
-  initItems()
+  items.value = items.value.map((item, key) => {
+    initialValues[key + 1] = {
+      initialAngle: 0, //Help for managing rotation
+      initialWidth: item.width ?? 0, //Help for managing resize
+      initialHeight: item.height ?? 0, //Help for managing resize
+    }
+    return {
+      id: key + 1,
+      ...item,
+    }
+  })
+  maxIdUsed.value = items.value?.length
+  applyStyleSizeItems()
+  nextTick(() => initItems())
   document.addEventListener('keydown', handleKeyDown)
   document.addEventListener('keyup', handleKeyUp)
   window.addEventListener('resize', initItems)
 })
-
 // Ensure global event listeners are removed when component is unmounted
 onUnmounted(() => {
   document.removeEventListener('keydown', handleKeyDown)
@@ -922,44 +1116,33 @@ onUnmounted(() => {
   document.removeEventListener('touchend', stopRotate)
 })
 
-//WATCH
+/** WATCH */
 watch(
-  () => props.maxNumberOfItems,
+  items,
   () => {
-    if (props.maxNumberOfItems !== undefined) {
-      if (props.maxNumberOfItems > refItems.value.length) {
-        //We increase the list with props items currently not displayed to equal max number
-        const propsItemsNotDisplayed = props.items
-          .map((item, idx) => ({
+    if (noIdItems.value?.length > 0) {
+      items.value = items.value?.map((item) => {
+        if (!item.id) {
+          maxIdUsed.value += 1
+          initialValues[maxIdUsed.value] = {
+            initialAngle: 0, //Help for managing rotation
+            initialWidth: item.width ?? 0, //Help for managing resize
+            initialHeight: item.height ?? 0, //Help for managing resize
+          }
+          return {
+            id: maxIdUsed.value,
             ...item,
-            id: idx,
-            initialAngle: 0,
-            initialWidth: item.width ?? 0,
-            initialHeight: item.height ?? 0,
-          }))
-          ?.filter((item) => !refItems.value.map((item) => item.id).includes(item.id))
-          ?.slice(0, props.maxNumberOfItems - refItems.value.length)
-        refItems.value = [...refItems.value, ...propsItemsNotDisplayed]
-      } else {
-        //We reduce the list
-        refItems.value = refItems.value.slice(0, props.maxNumberOfItems)
-      }
-    } else {
-      //Undefined = Max numbers of items => actual items + props items currently not displayed
-      const propsItemsNotDisplayed = props.items
-        .map((item, idx) => ({
-          ...item,
-          id: idx,
-          initialAngle: 0,
-          initialWidth: item.width ?? 0,
-          initialHeight: item.height ?? 0,
-        }))
-        ?.filter((item) => !refItems.value.map((item) => item.id).includes(item.id))
-      refItems.value = [...refItems.value, ...propsItemsNotDisplayed]
+          }
+        } else {
+          return item
+        }
+      })
     }
     nextTick(() => {
-      initItems()
+      if (noSizeItems.value?.length > 0) initItems()
+      applyStyleSizeItems()
     })
   },
+  { deep: true },
 )
 </script>
