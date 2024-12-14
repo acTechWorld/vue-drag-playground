@@ -195,32 +195,31 @@ interface DraggableItem {
   rotation?: number
 }
 
+export type DrapPlaygroundProps = {
+  isDrag?: boolean
+  isResize?: boolean
+  isRotate?: boolean
+  isCopy?: boolean
+  isMultiSelect?: boolean
+  isDelete?: boolean
+  throttleDelay?: number
+  maxNumberOfItems?: number | undefined
+  multiRotationMode?: 'proportional' | 'uniform' // "proportional" multirotation keep the based angle of item / "proportional" multirotation align items at the same angle"
+}
+
 type ResizingHandle = 'top-right' | 'bottom-right' | 'top-left' | 'bottom-left'
 
-const props = withDefaults(
-  defineProps<{
-    isDrag?: boolean
-    isResize?: boolean
-    isRotate?: boolean
-    isCopy?: boolean
-    isMultiSelect?: boolean
-    isDelete?: boolean
-    throttleDelay?: number
-    maxNumberOfItems?: number | undefined
-    multiRotationMode?: 'proportional' | 'uniform' // "proportional" multirotation keep the based angle of item / "proportional" multirotation align items at the same angle"
-  }>(),
-  {
-    isDrag: true,
-    isResize: false,
-    isRotate: false,
-    isMultiSelect: true,
-    isCopy: false,
-    isDelete: false,
-    throttleDelay: 1,
-    maxNumberOfItems: undefined,
-    multiRotationMode: 'proportional',
-  },
-)
+const props = withDefaults(defineProps<DrapPlaygroundProps>(), {
+  isDrag: true,
+  isResize: false,
+  isRotate: false,
+  isMultiSelect: true,
+  isCopy: false,
+  isDelete: false,
+  throttleDelay: 1,
+  maxNumberOfItems: undefined,
+  multiRotationMode: 'proportional',
+})
 
 //COMMON
 const items: Ref<DraggableItem[]> = defineModel({ default: [] })
