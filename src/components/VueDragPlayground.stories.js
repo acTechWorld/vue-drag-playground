@@ -3,6 +3,18 @@ export default {
   title: 'Lib/Components/VueDragPlayground',
 
   component: VueDragPlayground,
+  argTypes: {
+    // Event definitions
+    onDragStart: { action: 'drag-start' },
+    // onDragging: { action: 'dragging' },
+    onDragEnd: { action: 'drag-end' },
+    onResizeStart: { action: 'resize-start' },
+    // onResizing: { action: 'resizing' },
+    onResizeEnd: { action: 'resize-end' },
+    onRotationStart: { action: 'rotation-start' },
+    // onRotating: { action: 'rotating' },
+    onRotationEnd: { action: 'rotation-end' },
+  },
 }
 import { ref } from 'vue'
 
