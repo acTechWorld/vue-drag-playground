@@ -8,6 +8,8 @@ import type { App } from 'vue'
 import VueDragPlayground from './components/VueDragPlayground.vue'
 import './assets/main.css'
 
+export { VueDragPlayground }
+
 // Install function for the plugin system
 export default {
   install(app: App) {
