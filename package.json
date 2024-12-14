@@ -1,21 +1,23 @@
 {
   "name": "vue-drag-playground",
-  "version": "0.0.1-beta.13",
+  "version": "0.0.1-beta.17",
   "private": false,
   "license": "MIT",
   "type": "module",
+  "types": "./dist/types/index.d.ts",
   "publishConfig": {
     "access": "public"
   },
   "exports": {
     ".": {
       "import": "./dist/vue-drag-playground.es.js",
-      "require": "./dist/vue-drag-playground.umd.js"
+      "require": "./dist/vue-drag-playground.umd.js",
+      "types": "./dist/types/index.d.ts"
     }
   },
   "scripts": {
     "dev": "vite",
-    "build": "run-p type-check \"build-only {@}\" --",
+    "build": "vue-tsc --declaration --emitDeclarationOnly && vite build",
     "preview": "vite preview",
     "test:unit": "vitest --environment jsdom",
     "build-only": "vite build",
@@ -33,7 +35,6 @@
     "@chromatic-com/storybook": "^3.2.2",
     "@storybook/addon-essentials": "^8.4.4",
     "@storybook/addon-interactions": "^8.4.4",
-    "@storybook/addon-onboarding": "^8.4.4",
     "@storybook/blocks": "^8.4.4",
     "@storybook/test": "^8.4.4",
     "@storybook/vue3": "^8.4.4",

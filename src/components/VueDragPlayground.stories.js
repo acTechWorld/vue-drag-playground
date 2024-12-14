@@ -3,6 +3,18 @@ export default {
   title: 'Lib/Components/VueDragPlayground',
 
   component: VueDragPlayground,
+  argTypes: {
+    // Event definitions
+    onDragStart: { action: 'drag-start' },
+    // onDragging: { action: 'dragging' },
+    onDragEnd: { action: 'drag-end' },
+    onResizeStart: { action: 'resize-start' },
+    // onResizing: { action: 'resizing' },
+    onResizeEnd: { action: 'resize-end' },
+    onRotationStart: { action: 'rotation-start' },
+    // onRotating: { action: 'rotating' },
+    onRotationEnd: { action: 'rotation-end' },
+  },
 }
 import { ref } from 'vue'
 
@@ -49,7 +61,7 @@ Default.args = {
   items: [
     {
       name: 'block1',
-      html: "<h1 style='background: blue; width: 100px'>Heading</h1>",
+      html: "<h1 style='background: red; width: 100px'>Heading</h1>",
       x: 50,
       y: 50,
       rotation: 50,
