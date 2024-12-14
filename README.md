@@ -2,10 +2,6 @@
 
 VueDragPlayground is a versatile Vue 3 library designed to create dynamic and interactive user interfaces with drag, resize, and rotate functionalities. It allows developers to easily implement draggable, resizable, and rotatable elements in their applications, offering a smooth user experience powered by modern tooling like Vue 3 and Vite.
 
-Here’s your updated section with a LinkedIn link added:
-
----
-
 ## Quick Links
 
 - 🌐 [Live Demo](https://vuedragplayground.actechworld.com/)  
@@ -13,7 +9,7 @@ Here’s your updated section with a LinkedIn link added:
 - 📚 [Storybook Documentation](https://vuedragplayground.storybook.actechworld.com/?path=/story/lib-components-vuedragplayground--default)  
   Dive into detailed component stories and configurations.
 - 💼 [LinkedIn](https://www.linkedin.com/in/antoine-canard/)  
-  Connect with us on LinkedIn for updates and professional networking.
+  Here is my linkedin if you want to contact me I'm always open for new challenges !.
 
 ## Features
 
