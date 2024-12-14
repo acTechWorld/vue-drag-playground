@@ -25,7 +25,7 @@
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 448 512"
           class="copy_btn_icon fill-black h-5 cursor-pointer"
-          @click.stop="copyItem(item.id)"
+          @mousedown.stop="handleCopyItem(item.id)"
         >
           <path
             d="M208 0L332.1 0c12.7 0 24.9 5.1 33.9 14.1l67.9 67.9c9 9 14.1 21.2 14.1 33.9L448 336c0 26.5-21.5 48-48 48l-192 0c-26.5 0-48-21.5-48-48l0-288c0-26.5 21.5-48 48-48zM48 128l80 0 0 64-64 0 0 256 192 0 0-32 64 0 0 48c0 26.5-21.5 48-48 48L48 512c-26.5 0-48-21.5-48-48L0 176c0-26.5 21.5-48 48-48z"
@@ -36,7 +36,7 @@
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 448 512"
           class="delete_btn_icon fill-black h-5 cursor-pointer"
-          @click.stop="deleteItem(item.id)"
+          @mousedown.stop="handleDeleteItem(item.id)"
         >
           <path
             d="M135.2 17.7L128 32 32 32C14.3 32 0 46.3 0 64S14.3 96 32 96l384 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-96 0-7.2-14.3C307.4 6.8 296.3 0 284.2 0L163.8 0c-12.1 0-23.2 6.8-28.6 17.7zM416 128L32 128 53.2 467c1.6 25.3 22.6 45 47.9 45l245.8 0c25.3 0 46.3-19.7 47.9-45L416 128z"
@@ -420,6 +420,19 @@ const copyItem = (id: number) => {
   }
 }
 
+const handleCopyItem = (id: number) => {
+  if (ctrlSelectedItemsId.value?.length > 0 && ctrlSelectedItemsId.value.includes(id)) {
+    ctrlSelectedItemsId.value.forEach((localId) => {
+      const ctrlItem = items.value.find((refItem) => refItem.id === localId)
+      if (ctrlItem && ctrlItem.id) {
+        copyItem(ctrlItem.id)
+      }
+    })
+  } else {
+    copyItem(id)
+  }
+}
+
 //DELETE
 const deleteItem = (id: number) => {
   if (props.isDelete) {
@@ -428,6 +441,19 @@ const deleteItem = (id: number) => {
       1,
     )
     interactId.value = null
+  }
+}
+
+const handleDeleteItem = (id: number) => {
+  if (ctrlSelectedItemsId.value?.length > 0 && ctrlSelectedItemsId.value.includes(id)) {
+    ctrlSelectedItemsId.value.forEach((localId) => {
+      const ctrlItem = items.value.find((refItem) => refItem.id === localId)
+      if (ctrlItem && ctrlItem.id) {
+        deleteItem(ctrlItem.id)
+      }
+    })
+  } else {
+    deleteItem(id)
   }
 }
 
@@ -1116,6 +1142,10 @@ onUnmounted(() => {
 })
 
 /** WATCH */
+watch(
+  () => props.maxNumberOfItems,
+  () => nextTick(() => applyStyleSizeItems()),
+)
 watch(
   items,
   () => {

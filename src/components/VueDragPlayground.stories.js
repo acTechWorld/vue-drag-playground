@@ -49,7 +49,7 @@ Default.args = {
   items: [
     {
       name: 'block1',
-      html: "<h1 style='background: blue; width: 100px'>Heading</h1>",
+      html: "<h1 style='background: red; width: 100px'>Heading</h1>",
       x: 50,
       y: 50,
       rotation: 50,
