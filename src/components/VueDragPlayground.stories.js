@@ -50,7 +50,7 @@ const DefaultTemplate = (args) => ({
   },
   template: `
     <div>      
-      <VueDragPlayground @drag-start="handleDragStart" @drag-end="handleDragEnd" v-bind="args" v-model="refItems" class="w-full sm:overflow-visible overflow-hidden h-[90vh] rounded-lg outline-black outline-2 outline bg-blue-200"/>
+      <VueDragPlayground @drag-start="handleDragStart" @drag-end="handleDragEnd" v-bind="args" v-model="refItems" class="w-full sm:!overflow-visible !overflow-hidden !h-[90vh] rounded-lg outline-black outline-2 outline bg-blue-200"/>
     </div>
   `,
 })
