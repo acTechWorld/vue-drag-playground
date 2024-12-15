@@ -6,7 +6,9 @@ VueDragPlayground is a versatile Vue 3 library designed to create dynamic and in
 
 - 🌐 [Live Demo](https://vuedragplayground.actechworld.com/)  
   Explore a live example of the component in action.
-- 📚 [Storybook Documentation](https://vuedragplayground.storybook.actechworld.com/?path=/story/lib-components-vuedragplayground--default)  
+- 📚 [Storybook Documentation](https://vuedragplayground.storybook.actechworld.com/?path=/story/lib-components-vuedragplayground--default)
+- 📦 [Npm package](https://www.npmjs.com/package/vue-drag-playground)  
+  Here is the npm package
   Dive into detailed component stories and configurations.
 - 💼 [LinkedIn](https://www.linkedin.com/in/antoine-canard/)  
   Here is my linkedin if you want to contact, me I'm always open for new challenges !
