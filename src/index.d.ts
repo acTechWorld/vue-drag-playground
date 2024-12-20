@@ -1,4 +1,4 @@
-import { App, DefineComponent, EmitsOptions } from 'vue'
+import { App, DefineComponent } from 'vue'
 
 // Define prop types
 export declare type DraggableItem = {

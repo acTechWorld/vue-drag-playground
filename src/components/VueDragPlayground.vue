@@ -1145,6 +1145,7 @@ onUnmounted(() => {
   document.removeEventListener('touchend', stopRotate)
 })
 
+defineExpose({ initItems })
 /** WATCH */
 watch(
   () => props.maxNumberOfItems,
