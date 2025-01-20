@@ -491,9 +491,9 @@ const startResize = (event: MouseEvent | TouchEvent, id: number, handle: Resizin
       emit('resize-start', item, handle)
       interactId.value = id
       resizingHandle.value = handle
-      const isTouch = event instanceof TouchEvent
-      initialMouseX.value = isTouch ? event.touches[0].clientX : event.clientX
-      initialMouseY.value = isTouch ? event.touches[0].clientY : event.clientY
+      const isTouch = typeof TouchEvent !== 'undefined' && event instanceof TouchEvent
+      initialMouseX.value = isTouch ? event.touches[0].clientX : (event as MouseEvent).clientX
+      initialMouseY.value = isTouch ? event.touches[0].clientY : (event as MouseEvent).clientY
       if (ctrlSelectedItemsId.value?.length > 0 && ctrlSelectedItemsId.value.includes(id)) {
         ctrlSelectedItemsId.value.forEach((localId) => {
           const ctrlItem = items.value.find((refItem) => refItem.id === localId)
@@ -525,9 +525,9 @@ const onResize = throttle((event: MouseEvent | TouchEvent) => {
 
   const playgroundBounds = playground.getBoundingClientRect()
 
-  const isTouch = event instanceof TouchEvent
-  const clientX = isTouch ? event.touches[0].clientX : event.clientX
-  const clientY = isTouch ? event.touches[0].clientY : event.clientY
+  const isTouch = typeof TouchEvent !== 'undefined' && event instanceof TouchEvent
+  const clientX = isTouch ? event.touches[0].clientX : (event as MouseEvent).clientX
+  const clientY = isTouch ? event.touches[0].clientY : (event as MouseEvent).clientY
 
   const dx = clientX - initialMouseX.value
   const dy = clientY - initialMouseY.value
@@ -705,9 +705,9 @@ const startRotate = (event: MouseEvent | TouchEvent, id: number) => {
       centerX.value = bounds.left + bounds.width / 2
       centerY.value = bounds.top + bounds.height / 2
 
-      const isTouch = event instanceof TouchEvent
-      initialMouseX.value = isTouch ? event.touches[0].clientX : event.clientX
-      initialMouseY.value = isTouch ? event.touches[0].clientY : event.clientY
+      const isTouch = typeof TouchEvent !== 'undefined' && event instanceof TouchEvent
+      initialMouseX.value = isTouch ? event.touches[0].clientX : (event as MouseEvent).clientX
+      initialMouseY.value = isTouch ? event.touches[0].clientY : (event as MouseEvent).clientY
       const dx = initialMouseX.value - centerX.value
       const dy = initialMouseY.value - centerY.value
 
@@ -742,9 +742,9 @@ const onRotate = throttle((event: MouseEvent | TouchEvent) => {
   if (!playground || !item || item.id === undefined || interactId.value === null) return
   const playgroundBounds = playground.getBoundingClientRect()
 
-  const isTouch = event instanceof TouchEvent
-  const clientX = isTouch ? event.touches[0].clientX : event.clientX
-  const clientY = isTouch ? event.touches[0].clientY : event.clientY
+  const isTouch = typeof TouchEvent !== 'undefined' && event instanceof TouchEvent
+  const clientX = isTouch ? event.touches[0].clientX : (event as MouseEvent).clientX
+  const clientY = isTouch ? event.touches[0].clientY : (event as MouseEvent).clientY
 
   const dx = clientX - centerX.value
   const dy = clientY - centerY.value
@@ -823,9 +823,13 @@ const startDrag = (event: MouseEvent | TouchEvent, id: number) => {
       interactId.value = id
       currentDragEl.value = event.currentTarget as HTMLElement
 
-      const isTouch = event instanceof TouchEvent
-      offsetX.value = isTouch ? event.touches[0].clientX - item.x : event.clientX - item.x
-      offsetY.value = isTouch ? event.touches[0].clientY - item.y : event.clientY - item.y
+      const isTouch = typeof TouchEvent !== 'undefined' && event instanceof TouchEvent
+      offsetX.value = isTouch
+        ? event.touches[0].clientX - item.x
+        : (event as MouseEvent).clientX - item.x
+      offsetY.value = isTouch
+        ? event.touches[0].clientY - item.y
+        : (event as MouseEvent).clientY - item.y
       // Add global listeners for dragging
       document.addEventListener(isTouch ? 'touchmove' : 'mousemove', onDrag)
       document.addEventListener(isTouch ? 'touchend' : 'mouseup', stopDrag)
@@ -843,9 +847,9 @@ const onDrag = throttle((event: MouseEvent | TouchEvent) => {
   emit('dragging', item)
 
   const playgroundBounds = playground.getBoundingClientRect()
-  const isTouch = event instanceof TouchEvent
-  const clientX = isTouch ? event.touches[0].clientX : event.clientX
-  const clientY = isTouch ? event.touches[0].clientY : event.clientY
+  const isTouch = typeof TouchEvent !== 'undefined' && event instanceof TouchEvent
+  const clientX = isTouch ? event.touches[0].clientX : (event as MouseEvent).clientX
+  const clientY = isTouch ? event.touches[0].clientY : (event as MouseEvent).clientY
 
   const newX = clientX - offsetX.value
   const newY = clientY - offsetY.value
@@ -1141,6 +1145,7 @@ onUnmounted(() => {
   document.removeEventListener('touchend', stopRotate)
 })
 
+defineExpose({ initItems })
 /** WATCH */
 watch(
   () => props.maxNumberOfItems,
