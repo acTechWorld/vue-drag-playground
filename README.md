@@ -75,7 +75,7 @@ Alternatively, register the component locally in a Vue file:
 
 <script setup>
 import { ref } from 'vue';  <!-- Use 'import { ref } from 'vue';' for Vue 3 -->
-import VueDragPlayground from 'vue-drag-playground';
+import { VueDragPlayground } from 'vue-drag-playground';
 
 const items = ref([
   { id: 1, html: '<div>Item 1</div>', x: 100, y: 150, width: 200, height: 150, rotation: 0 },
@@ -92,7 +92,7 @@ For Vue 2, you will need to adjust the script as follows:
 </template>
 
 <script>
-import VueDragPlayground from 'vue-drag-playground'
+import { VueDragPlayground } from 'vue-drag-playground'
 
 export default {
   components: {
@@ -214,7 +214,7 @@ Here’s how you can use VueDragPlayground to create an interactive UI, showcasi
 
 <script setup>
 import { ref } from 'vue'
-import VueDragPlayground from 'vue-drag-playground'
+import { VueDragPlayground } from 'vue-drag-playground'
 
 const items = ref([
   { id: 1, html: '<div>Item 1</div>', x: 100, y: 150, width: 200, height: 150, rotation: 0 },
