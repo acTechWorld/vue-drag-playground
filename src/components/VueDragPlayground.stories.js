@@ -14,6 +14,8 @@ export default {
     onRotationStart: { action: 'rotation-start' },
     // onRotating: { action: 'rotating' },
     onRotationEnd: { action: 'rotation-end' },
+    onCopyItems: { action: 'copy-items' },
+    onDeleteItems: { action: 'delete-items' },
   },
 }
 import { ref } from 'vue'

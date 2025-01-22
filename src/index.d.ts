@@ -38,6 +38,8 @@ export declare type DrapPlaygroundEmits = {
   'rotate-start': (item: DraggableItem) => void
   rotating: (item: DraggableItem) => void
   'rotate-end': (item: DraggableItem) => void
+  'copy-items': (payload: { copiedItems: DraggableItem[]; createdItems: DraggableItem[] }) => void
+  'delete-items': (deletedItems: DraggableItem[]) => void
 }
 
 // Declare the Vue component itself

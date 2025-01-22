@@ -168,6 +168,8 @@ The following events can be emitted by the component to inform the parent about 
 - `rotation-start`: Fired when rotation starts. **Emits the updated item.**
 - `rotating`: Fired while an item is being rotated. **Emits the updated item.**
 - `rotation-end`: Fired when rotation stops. **Emits the updated item.**
+- `copy-items`: Fired when items are copied. **Emits an object containing the copied items and the newly created items.**
+- `delete-items`: Fired when items are deleted. **Emits the list of deleted items.**
 
 Each event provides the entire updated item, including all properties such as its position (`x`, `y`), size (`width`, `height`), and rotation (`rotation`).
 
@@ -209,6 +211,8 @@ Here’s how you can use VueDragPlayground to create an interactive UI, showcasi
     @rotation-start="onRotationStart"
     @rotating="onRotating"
     @rotation-end="onRotationEnd"
+    @copy-items="onCopyItems"
+    @delete-items="onDeleteItems"
   />
 </template>
 
@@ -242,6 +246,14 @@ Resize ended:', updatedItem)
 const onRotationStart = (updatedItem) => console.log('Rotation started:', updatedItem)
 const onRotating = (updatedItem) => console.log('Rotating:', updatedItem)
 const onRotationEnd = (updatedItem) => console.log('Rotation ended:', updatedItem)
+const onCopyItems = ({ copiedItems, createdItems }) => {
+  console.log('Items copied:', copiedItems);
+  console.log('Newly created items:', createdItems);
+};
+
+const onDeleteItems = (deletedItems) => {
+  console.log('Items deleted:', deletedItems);
+};
 </script>
 ```
 
