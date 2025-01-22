@@ -182,6 +182,7 @@ import {
   type Reactive,
   computed,
   watch,
+  toRaw,
 } from 'vue'
 import DOMPurify from 'dompurify'
 interface DraggableItem {
@@ -422,7 +423,7 @@ const copyItems = (ids: number[]) => {
             initialWidth: item.width ?? 0, //Help for managing resize
             initialHeight: item.height ?? 0, //Help for managing resize
           }
-          listCopiedItems.push(item)
+          listCopiedItems.push(toRaw(item))
           listCreatedItems.push(newItem)
         }
       }
@@ -454,7 +455,7 @@ const deleteItems = (ids: number[]) => {
     const listDeletedItems: DraggableItem[] = []
     ids.forEach((id) => {
       const deletedItemIdx = items.value.findIndex((item) => item.id === id)
-      listDeletedItems.push(items.value[deletedItemIdx])
+      listDeletedItems.push(toRaw(items.value[deletedItemIdx]))
       items.value.splice(deletedItemIdx, 1)
     })
     interactId.value = null
