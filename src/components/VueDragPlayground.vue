@@ -358,7 +358,7 @@ const handleKeyDown = (event: KeyboardEvent) => {
         // Paste logic
         copyItems(ctrlSelectedItemsId.value)
       } else if (event.key === 'Delete' || event.key === 'Backspace') {
-        ctrlSelectedItemsId.value.forEach((id) => deleteItem(id))
+        deleteItems(ctrlSelectedItemsId.value)
         ctrlSelectedItemsId.value = []
       }
     } else {
