@@ -182,6 +182,7 @@ import {
   type Reactive,
   computed,
   watch,
+  toRaw,
 } from 'vue'
 import DOMPurify from 'dompurify'
 interface DraggableItem {
@@ -268,6 +269,8 @@ const emit = defineEmits([
   'rotation-end',
   'rotation-start',
   'rotating',
+  'copy-items',
+  'delete-items',
 ])
 
 /**
@@ -354,9 +357,9 @@ const handleKeyDown = (event: KeyboardEvent) => {
         isCtrlC.value = true
       } else if (isCtrlC.value && event.key === 'v') {
         // Paste logic
-        ctrlSelectedItemsId.value.forEach((id) => copyItem(id))
+        copyItems(ctrlSelectedItemsId.value)
       } else if (event.key === 'Delete' || event.key === 'Backspace') {
-        ctrlSelectedItemsId.value.forEach((id) => deleteItem(id))
+        deleteItems(ctrlSelectedItemsId.value)
         ctrlSelectedItemsId.value = []
       }
     } else {
@@ -378,82 +381,102 @@ const handleClickPlayground = () => {
 }
 
 //COPY
-const copyItem = (id: number) => {
-  if (props.isCopy && (!props.maxNumberOfItems || props.maxNumberOfItems > items.value.length)) {
-    const playground = document.querySelector('.vue-drag-playground')
-    const item = items.value.find((item) => item.id === id)
-    if (item && playground) {
-      const rotation = ((item.rotation ?? 0) * Math.PI) / 180
-      const halfWidth = (item.width ?? 0) / 2
-      const halfHeight = (item.height ?? 0) / 2
-      // Calculate rotated corners relative to the center
-      const corners = [
-        { x: -halfWidth, y: -halfHeight }, // Top-left
-        { x: halfWidth, y: -halfHeight }, // Top-right
-        { x: halfWidth, y: halfHeight }, // Bottom-right
-        { x: -halfWidth, y: halfHeight }, // Bottom-left
-      ].map((corner) => ({
-        x: item.x + halfWidth + corner.x * Math.cos(rotation) - corner.y * Math.sin(rotation),
-        y: item.y + halfHeight + corner.x * Math.sin(rotation) + corner.y * Math.cos(rotation),
-      }))
+const copyItems = (ids: number[]) => {
+  if (props.isCopy) {
+    const listCopiedItems: DraggableItem[] = []
+    const listCreatedItems: DraggableItem[] = []
+    ids.forEach((id) => {
+      if (!props.maxNumberOfItems || props.maxNumberOfItems > items.value.length) {
+        const playground = document.querySelector('.vue-drag-playground')
+        const item = items.value.find((item) => item.id === id)
+        if (item && playground) {
+          const rotation = ((item.rotation ?? 0) * Math.PI) / 180
+          const halfWidth = (item.width ?? 0) / 2
+          const halfHeight = (item.height ?? 0) / 2
+          // Calculate rotated corners relative to the center
+          const corners = [
+            { x: -halfWidth, y: -halfHeight }, // Top-left
+            { x: halfWidth, y: -halfHeight }, // Top-right
+            { x: halfWidth, y: halfHeight }, // Bottom-right
+            { x: -halfWidth, y: halfHeight }, // Bottom-left
+          ].map((corner) => ({
+            x: item.x + halfWidth + corner.x * Math.cos(rotation) - corner.y * Math.sin(rotation),
+            y: item.y + halfHeight + corner.x * Math.sin(rotation) + corner.y * Math.cos(rotation),
+          }))
 
-      // Get maximum offsets caused by rotation
-      const maxX = Math.max(...corners.map((corner) => corner.x))
-      const maxY = Math.max(...corners.map((corner) => corner.y))
-      const playgroundBounds = playground.getBoundingClientRect()
-      maxIdUsed.value += 1
-      // Create a shallow copy of the item properties, adjust position slightly to avoid overlap
-      const newItem = {
-        ...item,
-        x: maxX + 20 < playgroundBounds.width ? item.x + 20 : item.x - 20, // Adjust x position to prevent overlap
-        y: maxY + 20 < playgroundBounds.height ? item.y + 20 : item.y - 20, // Adjust y position to prevent overlap
-        html: item.html, // Preserve HTML content
-        id: maxIdUsed.value,
+          // Get maximum offsets caused by rotation
+          const maxX = Math.max(...corners.map((corner) => corner.x))
+          const maxY = Math.max(...corners.map((corner) => corner.y))
+          const playgroundBounds = playground.getBoundingClientRect()
+          maxIdUsed.value += 1
+          // Create a shallow copy of the item properties, adjust position slightly to avoid overlap
+          const newItem = {
+            ...item,
+            x: maxX + 20 < playgroundBounds.width ? item.x + 20 : item.x - 20, // Adjust x position to prevent overlap
+            y: maxY + 20 < playgroundBounds.height ? item.y + 20 : item.y - 20, // Adjust y position to prevent overlap
+            html: item.html, // Preserve HTML content
+            id: maxIdUsed.value,
+          }
+          items.value.push(newItem) // Add the copied item to the list
+          initialValues[newItem.id] = {
+            initialAngle: 0, //Help for managing rotation
+            initialWidth: item.width ?? 0, //Help for managing resize
+            initialHeight: item.height ?? 0, //Help for managing resize
+          }
+          listCopiedItems.push(toRaw(item))
+          listCreatedItems.push(newItem)
+        }
       }
-      items.value.push(newItem) // Add the copied item to the list
-      initialValues[newItem.id] = {
-        initialAngle: 0, //Help for managing rotation
-        initialWidth: item.width ?? 0, //Help for managing resize
-        initialHeight: item.height ?? 0, //Help for managing resize
-      }
+    })
+    if (listCopiedItems.length > 0 && listCreatedItems.length > 0) {
+      emit('copy-items', { copiedItems: listCopiedItems, createdItems: listCreatedItems })
     }
   }
 }
 
 const handleCopyItem = (id: number) => {
   if (ctrlSelectedItemsId.value?.length > 0 && ctrlSelectedItemsId.value.includes(id)) {
+    const listIds: number[] = []
     ctrlSelectedItemsId.value.forEach((localId) => {
       const ctrlItem = items.value.find((refItem) => refItem.id === localId)
       if (ctrlItem && ctrlItem.id) {
-        copyItem(ctrlItem.id)
+        listIds.push(ctrlItem.id)
       }
     })
+    copyItems(listIds)
   } else {
-    copyItem(id)
+    copyItems([id])
   }
 }
 
 //DELETE
-const deleteItem = (id: number) => {
+const deleteItems = (ids: number[]) => {
   if (props.isDelete) {
-    items.value.splice(
-      items.value.findIndex((item) => item.id === id),
-      1,
-    )
+    const listDeletedItems: DraggableItem[] = []
+    ids.forEach((id) => {
+      const deletedItemIdx = items.value.findIndex((item) => item.id === id)
+      listDeletedItems.push(toRaw(items.value[deletedItemIdx]))
+      items.value.splice(deletedItemIdx, 1)
+    })
     interactId.value = null
+    if (listDeletedItems.length > 0) {
+      emit('delete-items', listDeletedItems)
+    }
   }
 }
 
 const handleDeleteItem = (id: number) => {
   if (ctrlSelectedItemsId.value?.length > 0 && ctrlSelectedItemsId.value.includes(id)) {
+    const listIds: number[] = []
     ctrlSelectedItemsId.value.forEach((localId) => {
       const ctrlItem = items.value.find((refItem) => refItem.id === localId)
       if (ctrlItem && ctrlItem.id) {
-        deleteItem(ctrlItem.id)
+        listIds.push(ctrlItem.id)
       }
     })
+    deleteItems(listIds)
   } else {
-    deleteItem(id)
+    deleteItems([id])
   }
 }
 
