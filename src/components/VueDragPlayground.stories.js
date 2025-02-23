@@ -53,7 +53,7 @@ const DefaultTemplate = (args) => ({
   template: `
     <div>      
       <VueDragPlayground @drag-start="handleDragStart" @drag-end="handleDragEnd" v-bind="args" v-model="refItems" class="w-full sm:!overflow-visible !overflow-hidden !h-[90vh] rounded-lg outline-black outline-2 outline bg-blue-200">
-        <div class="flex w-full h-full items-center justify-center"><div>yo</div></div>
+        
       </VueDragPlayground>
     </div>
   `,
@@ -82,7 +82,7 @@ Default.args = {
       html: "<div class='yo' style='background: yellow; padding: 10px;'>Static Item</div>",
       x: 350,
       y: 300,
-      static: true
+      static: true,
     },
     {
       name: 'block3',
