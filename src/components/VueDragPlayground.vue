@@ -3,6 +3,7 @@
     class="vue-drag-playground select-none relative w-full h-full"
     @mousedown="handleClickPlayground"
   >
+    <slot></slot>
     <div
       v-for="(item, index) in displayedItems"
       :key="index"
@@ -15,7 +16,7 @@
     >
       <!-- Copy and Delete buttons -->
       <div
-        v-if="(isCopy || isDelete) && !isCtrl"
+        v-if="(isCopy || isDelete) && !isCtrl && !item.static"
         class="copy_delete_btn_container z-0 group-hover:z-[2] group-hover:opacity-100 transition-opacity duration-500 group-hover:pointer-events-auto pointer-events-none opacity-0 absolute flex gap-2"
         :class="{ 'opacity-100 z-[2]': interactId === item.id }"
         :style="calculateMenuPos(item.id)"
@@ -45,9 +46,10 @@
       </div>
       <div
         :class="{
-          'cursor-grabbing': interactId === item.id && isDrag && !isCtrl,
-          'cursor-grab': interactId !== item.id && isDrag && !isCtrl,
-          'cursor-pointer': isCtrl,
+          'cursor-grabbing': interactId === item.id && isDrag && !isCtrl && !item.static,
+          'cursor-grab': interactId !== item.id && isDrag && !isCtrl && !item.static,
+          'cursor-pointer': isCtrl && !item.static,
+          'pointer-events-none': item.static,
           'border-dashed border-2 border-black': ctrlSelectedItemsId.includes(item.id),
           'z-[3]': interactId === item.id || ctrlSelectedItemsId.includes(item.id),
         }"
@@ -60,7 +62,7 @@
         @touchstart.stop="startDrag($event, item.id)"
       >
         <div :class="`item-${item.id}`" v-html="DOMPurify.sanitize(item.html)"></div>
-        <div v-if="isResize && !isCtrl" class="resize_btn_container">
+        <div v-if="isResize && !isCtrl && !item.static" class="resize_btn_container">
           <div
             style="transform: rotate(-45deg)"
             class="resize_btn_top_right w-4 h-4 absolute bg-white/50 rounded-[50%] -top-1 -right-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none group/cursor"
@@ -147,7 +149,7 @@
           </div>
         </div>
         <div
-          v-if="isRotate && !isCtrl"
+          v-if="isRotate && !isCtrl && !item.static"
           class="rotate_btn absolute top-0 flex w-full h-10 -translate-y-full group-hover:pointer-events-auto pointer-events-none"
         >
           <svg
@@ -183,6 +185,7 @@ import {
   computed,
   watch,
   toRaw,
+  ComputedRef,
 } from 'vue'
 import DOMPurify from 'dompurify'
 interface DraggableItem {
@@ -194,6 +197,19 @@ interface DraggableItem {
   width?: number
   height?: number
   rotation?: number
+  static?: boolean
+}
+
+interface DisplayedIitem {
+  id: number
+  width: number
+  height: number
+  rotation: number
+  name?: string
+  html: string
+  x: number
+  y: number
+  static?: boolean
 }
 
 export type DrapPlaygroundProps = {
@@ -277,7 +293,7 @@ const emit = defineEmits([
  * COMPUTED
  */
 
-const displayedItems = computed(() =>
+const displayedItems: ComputedRef<DisplayedIitem[]> = computed(() =>
   items.value
     .map((item, key) => ({
       ...item,
