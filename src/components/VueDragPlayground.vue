@@ -155,7 +155,7 @@
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 512 512"
-            class="rotate_btn_icon w-6 h-6 p-1 group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none absolute bg-black rounded-[50%] cursor-pointer top-2 left-1/2 transform -translate-x-1/2"
+            class="rotate_btn_icon w-6 h-6 p-1 box-border group-hover:opacity-100 opacity-0 transition-all duration-500 group-hover:pointer-events-auto pointer-events-none absolute bg-black rounded-[50%] cursor-pointer top-2 left-1/2 transform -translate-x-1/2"
             :class="[
               { 'opacity-100': interactId === item.id },
               interactId === item.id && isRotating ? 'fill-green-500' : 'fill-white',

@@ -137,6 +137,7 @@ The component supports the following props to customize its behavior:
       width?: number,    // Optional width of the item (recommended to set, especially for images)
       height?: number,   // Optional height of the item (recommended to set, especially for images)
       rotation?: number  // Optional rotation angle in degrees
+      static?: boolean   // Optional a static item will be displayed on the playground but you cannot interact with it (drag, resize, rotate etc ...)
     }
     ```
 

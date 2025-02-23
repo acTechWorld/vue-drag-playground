@@ -6,7 +6,7 @@
  */
 import type { App } from 'vue'
 import VueDragPlayground from './components/VueDragPlayground.vue'
-import './assets/main.css'
+import './assets/index.css'
 
 export { VueDragPlayground }
 
