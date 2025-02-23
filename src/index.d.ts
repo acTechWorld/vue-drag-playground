@@ -10,6 +10,7 @@ export declare type DraggableItem = {
   width?: number
   height?: number
   rotation?: number
+  static?: boolean
 }
 
 export declare type DrapPlaygroundProps = {

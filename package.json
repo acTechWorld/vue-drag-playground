@@ -1,6 +1,6 @@
 {
   "name": "vue-drag-playground",
-  "version": "0.0.5-beta.2",
+  "version": "0.0.5-beta.4",
   "private": false,
   "license": "MIT",
   "type": "module",
@@ -16,8 +16,8 @@
     }
   },
   "scripts": {
-    "dev": "vite",
-    "build": "vue-tsc --declaration --emitDeclarationOnly && vite build",
+    "dev": "node convert-tailwind-to-css.js && vite",
+    "build": "vue-tsc --declaration --emitDeclarationOnly && node convert-tailwind-to-css.js && vite build",
     "preview": "vite preview",
     "test:unit": "vitest --environment jsdom",
     "build-only": "vite build",

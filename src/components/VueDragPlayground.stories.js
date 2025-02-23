@@ -82,7 +82,7 @@ Default.args = {
       html: "<div class='yo' style='background: yellow; padding: 10px;'>Static Item</div>",
       x: 350,
       y: 300,
-      static: true,
+      static: true
     },
     {
       name: 'block3',
